@@ -18,6 +18,8 @@ py312_vol/
 data/
 *.csv
 *.parquet
+db/
+
 
 # Notebooks checkpoints
 .ipynb_checkpoints/
