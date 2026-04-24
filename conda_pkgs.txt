@@ -1,0 +1,72 @@
+base = anaconda py3.13
+
+#########################################################
+conda create -n py312_vol python=3.12 ( without anaconda)
+conda install numpy pandas scipy matplotlib statsmodels scikit-learn
+
+in my PC:
+
+conda create -n py312_vol python=3.12 anaconda
+conda activate py312_vol
+#####################
+conda deactivate
+conda remove -n py312_vol --all
+conda install mlxtend --dry-run : shows what packages will be upgraded / degraded
+
+#####################
+
+python -m pip install --index-url=https://blpapi.bloomberg.com/repository/releases/python/simple/ blpapi
+pip install pdblp
+
+pip install yfinance
+pip install ta-lib
+conda install mlxtend
+
+conda install catboost
+conda install xgboost
+conda install lightgbm
+conda install shap
+conda install optuna
+conda install tensorflow
+
+
+pip install "fastapi[standard]"
+#pip install streamlit
+
+conda install fastmcp
+pip install langchain langchain-community
+pip install langchain-openai
+pip install langchain-anthropic
+pip install langchain-google-genai
+pip install langchain-mistralai
+pip install langgraph
+
+#####################
+conda install pytorch torchvision torchaudio pytorch-cuda -c pytorch -c nvidia
+conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia
+ NVIDIA-SMI 471.41       Driver Version: 471.41       CUDA Version: 11.4 
+As cuda version is old, can't use 12.4
+Your machine has 2 × NVIDIA Quadro P400, each with 2GB VRAM, and driver 471.41 / CUDA 11.4.
+
+conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
+Also didn't install 11.3
+Important: Quadro P400 is a low-memory GPU. It may work for small PyTorch tests, but for LLMs / large deep learning models, CPU may actually be more practical.
+
+CPU-only safer install:
+conda install pytorch torchvision torchaudio cpuonly -c pytorch
+some issue with pytorch
+
+#####################
+
+###################################################
+pip install "unstructured[all-docs]"
+this one uninstalls and downgraded pandas
+
+###################################################
+
+###################################################
+httpx[http2], dataclasses, python-dotenv already installed
+no need to install separately
+
+
+###################################################

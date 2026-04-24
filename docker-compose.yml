@@ -1,0 +1,23 @@
+services:
+  app:
+    build: .
+    volumes:
+      - ./src:/app/src     # Maps code
+      - ./data:/app/data   # Maps Excel/CSV files
+      
+      
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: quant_user
+      POSTGRES_PASSWORD: your_secure_password
+      POSTGRES_DB: market_data
+    volumes:
+      # 1. PERSISTENCE: This keeps your data alive on your drive
+      - ./db/pgdata:/var/lib/postgresql/data
+      # 2. INITIALIZATION: This runs your SQL scripts automatically
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
