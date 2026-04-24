@@ -20,7 +20,6 @@ data/
 *.parquet
 db/
 
-
 # Notebooks checkpoints
 .ipynb_checkpoints/
 
