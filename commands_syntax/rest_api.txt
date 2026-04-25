@@ -1,0 +1,74 @@
+When people talk about "REST API commands," they are usually referring to **HTTP Methods** (the verbs) and the **CLI tools** (like `curl`) used to execute them. 
+
+REST (Representational State Transfer) uses standard HTTP requests to perform CRUD (Create, Read, Update, Delete) operations on data.
+
+---
+
+### 1. The 5 Core HTTP Methods
+These are the standard "verbs" that tell the server what action to take.
+
+| Method | CRUD Action | Description |
+| :--- | :--- | :--- |
+| **GET** | Read | Retrieves data from the server (e.g., getting a user profile). |
+| **POST** | Create | Sends new data to the server to create a resource. |
+| **PUT** | Update | Replaces an existing resource entirely with new data. |
+| **PATCH** | Update | Modifies a specific part of an existing resource. |
+| **DELETE** | Delete | Removes a resource from the server. |
+
+
+
+---
+
+### 2. Using `curl` to Interact with APIs
+In a Unix terminal, `curl` is the industry-standard tool for testing REST APIs. Here is how those methods look in practice:
+
+#### **GET: Fetching Data**
+By default, `curl` performs a GET request.
+```bash
+curl https://api.example.com/users/1
+```
+
+#### **POST: Creating Data**
+You use `-X POST` and `-d` (data) to send information, usually in JSON format.
+```bash
+curl -X POST https://api.example.com/users \
+     -H "Content-Type: application/json" \
+     -d '{"name": "Jane Doe", "email": "jane@example.com"}'
+```
+
+#### **PUT/PATCH: Updating Data**
+```bash
+curl -X PUT https://api.example.com/users/1 \
+     -H "Content-Type: application/json" \
+     -d '{"name": "Jane Smith"}'
+```
+
+#### **DELETE: Removing Data**
+```bash
+curl -X DELETE https://api.example.com/users/1
+```
+
+---
+
+### 3. Common HTTP Status Codes
+When you run a command, the server sends back a three-digit code to tell you what happened:
+
+* **200 OK**: The request was successful.
+* **201 Created**: A new resource was successfully created (common after POST).
+* **400 Bad Request**: The server didn't understand your command (check your syntax/JSON).
+* **401 Unauthorized**: You need an API key or login credentials.
+* **404 Not Found**: The resource or URL doesn't exist.
+* **500 Internal Server Error**: The server crashed or encountered a bug.
+
+---
+
+### 4. Anatomy of a REST Command
+Every command you send typically consists of four parts:
+1.  **The Endpoint (URL):** The address of the resource (e.g., `/v1/products`).
+2.  **The Method:** The HTTP verb (GET, POST, etc.).
+3.  **The Headers:** Metadata, such as Authentication tokens or the format of the data (e.g., `Content-Type: application/json`).
+4.  **The Body:** The actual data being sent (used in POST, PUT, and PATCH).
+
+
+
+Are you trying to test a specific API right now, or are you looking for help setting up authentication (like Bearer tokens) for your commands?

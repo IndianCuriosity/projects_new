@@ -1,0 +1,146 @@
+
+#####################################
+# File & Directory Management 
+#####################################
+
+These are the foundational commands for navigating and organizing your system: 
+
+     DIR: Lists all files and subdirectories in the current folder.
+     CD (CHDIR): Changes the current working directory. 
+          cd Documents
+     CD .. to move up one level.
+          cd ..
+     MD (MKDIR): Creates a new directory.
+          mkdir test
+     RD (RMDIR): Deletes an empty directory.
+          rmdir test
+     DEL (ERASE): Deletes one or more files.
+          del file.txt
+     REN (RENAME): Changes the name of a file or directory.
+          ren old.txt new.txt
+     COPY: Copies files from one location to another.
+          copy a.txt b.txt
+     XCOPY: An advanced copy command that includes subdirectories and file attributes.
+          xcopy src dest /E
+     MOVE: Moves files or folders from one directory to another.
+          move a.txt folder\
+     TYPE: Displays the text content of a file on the screen.
+          type file.txt
+          type file.txt | more
+
+     ATTRIB: Displays or changes file attributes (like "Read-only" or "Hidden"). 
+
+#####################################
+# System & Disk Utilities 
+# Batch & Command-Line Utilities
+#####################################
+
+Used for monitoring system health and managing hardware: 
+
+     CHKDSK: Checks a disk for errors and displays a status report.
+          chkdsk C:
+     FORMAT: Erases and prepares a disk drive for use. format drive
+          format D:
+     DISKPART: Disk partition tool
+          diskpart
+     MEM: Displays information about used and free memory areas.
+     VER: Shows the current version of the operating system.
+     
+     VOL : Show Volume label
+          vol
+
+     DATE / TIME: Displays or allows you to change the system's date and time.
+     CLS: Clears all text from the command prompt screen.
+          cls
+     EXIT: Closes the command prompt session. Exit CMD
+          exit
+
+     CALL : Call another batch file
+          call script.bat
+     PAUSE : Pause Execution
+          pause
+     START:Open new window/program
+          start notepad
+
+#####################################
+# File Viewing & Searching
+#####################################
+
+     MORE: View output page-by-page
+          type file.txt | more
+     
+     FIND: Search text in file
+          find "hello" file.txt
+     
+     FINDSTR: Advanced search
+          findstr error log.txt
+
+#####################################
+# Process & Task Commands
+#####################################
+
+Used for monitoring system health and managing hardware: 
+
+     TASKLIST: List running processes
+          tasklist
+     TASKKILL: Kill Process
+          taskkill /IM notepad.exe
+     SHUTDOWN: Shutdown system
+          shutdown /s
+     shutdown /r : Restart system
+          shutdown /r
+
+     MEM: Displays information about used and free memory areas.
+     VER: Shows the current version of the operating system.
+     
+     VOL : Show Volume label
+          vol
+
+#####################################
+# Networking Commands
+#####################################
+
+Essential for troubleshooting and configuring network connections: 
+
+     IPCONFIG: Displays your computer’s IP address and network configuration. Show IP configuration
+          ipconfig
+          ipconfig/all : Full Network Info
+
+     PING: Tests the connection to another device or website by sending data packets. Test connectivity
+          ping google.com
+
+     TRACERT: Shows the exact path (hops) data takes to reach a destination. Trace Route
+          tracert google.com
+
+     NETSTAT: Lists active network connections and ports. Shows connections
+          netstat
+
+     NET: A broad utility for managing network resources, such as NET USER to list accounts. 
+
+     NSLOOKUP: DNS lookup
+          nslookup google.com
+     GETMAC: Show MAC address
+          getmac
+
+
+#####################################
+# Advanced & Batch Commands
+# Permissions & Advanced Commands
+#####################################
+
+Commonly used in script (batch) files to automate tasks: 
+
+     ECHO: Displays messages on the screen or toggles command visibility.
+     PAUSE: Temporarily stops a batch process until a key is pressed.
+     FOR / IF: Used for loops and conditional logic within scripts.
+     GOTO: Directs a script to jump to a specific labeled line.
+     REM: Used to add comments or "remarks" inside batch files. 
+
+     ATTRIB: Change file attributes
+          attrib +r file.txt
+     CACLS: Modify permissions
+          cacls file.txt
+     WHOAMI: Current user info
+          whoami
+     RUNAS: Run as another user
+          runas /user:admin cmd
