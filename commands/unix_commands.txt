@@ -1,0 +1,118 @@
+
+#########################
+Navigation & System Information
+#########################
+These help you find where you are and what is happening on the system.
+
+    # Print Working Directory: Shows your current folder path.
+    pwd
+
+    # List: Shows files and folders in your current directory.
+    ls
+    ls -la (shows all files with details)
+
+    # Change Directory: Moves you to a different folder.
+    cd
+    cd Documents
+
+    # Manual: Displays the instruction manual for any command.
+    man
+    man grep
+
+    # Displays the username of the current user.
+    whoami
+
+#########################
+File & Directory Manipulation
+#########################
+The essential tools for creating, moving, and deleting data.
+
+    # Creates a new directory.
+    mkdir
+    mkdir new_project
+
+    # Creates an empty file or updates the timestamp of an existing one.
+    touch
+
+    # Copies files or directories.
+    cp
+    cp file.txt copy_of_file.txt
+    
+    # Moves or renames files and directories.
+    mv
+
+    # Removes (deletes) files. Use rm -r to delete a folder and everything inside it  Warning: Unix does not have a "Trash" bin. Once you rm something, it is gone.
+    rm
+
+#########################
+Reading & Processing Text
+#########################
+Unix treats almost everything as a text stream, making these commands incredibly powerful.
+
+    # Displays the entire content of a file.
+    cat 
+
+    # Opens a file for viewing one page at a time (better for large files than cat).
+    less
+
+    # Shows the first or last 10 lines of a file. tail -f is often used to watch log files in real-time.
+    head / tail
+    
+    # Searches for a specific pattern or text within files.
+    grep
+    grep "error" server.log
+
+    # Advanced tools for data extraction and text transformation.
+    awk / sed
+
+
+#########################
+Permissions & Ownership
+#########################
+Unix is a multi-user system, so controlling access is vital.
+
+    # Change Mode: Changes file permissions (Read, Write, Execute).
+    chmod
+
+    # Change Owner: Changes the user/group ownership of a file.
+    chown
+
+    # SuperUser Do: Runs a command with administrative privileges.
+    sudo
+
+
+#########################
+Process & Resource Management
+#########################
+Tools to monitor your computer's "vitals."
+
+    # Displays real-time system resources (CPU, RAM) and running processes.
+    top / htop
+
+    # Snapshot of current processes. Often used as ps aux.
+    ps
+    ps aux
+
+    # Terminates a process using its Process ID (PID)
+    kill
+
+    # Shows available disk space in a human-readable format.
+    df -h
+
+#########################
+Networking & Connectivity
+#########################
+    
+    # Securely connects to a remote machine.
+    ssh
+
+    # Securely copies files between different computers.
+    scp
+
+    # Downloads content or interacts with APIs from the web.
+    curl /wget
+
+    # Checks the connectivity to another network host.
+    ping
+
+    
