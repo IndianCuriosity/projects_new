@@ -1,0 +1,118 @@
+
+#########################
+Environment management
+#########################
+
+    # Create environment
+    conda create -n myenv python=3.12
+
+    # Activate environment
+    conda activate myenv
+
+    # Deactivate environment
+    conda deactivate
+
+    # List environments
+    conda env list
+    conda info --envs
+
+    # Remove environment
+    conda remove -n myenv --all
+
+    # Clone an environment before testing risky changes
+    conda create --clone <old> -n <new>
+
+#########################
+Package management
+#########################
+
+    # Install package
+    conda install numpy
+
+    # Install multiple packages
+    conda install numpy pandas scipy
+
+    # Install from specific channel
+    conda install -c conda-forge psycopg
+
+    # Update package
+    conda update numpy
+
+    # Update all packages
+    conda update --all
+
+    # Remove package
+    conda remove numpy
+
+
+#########################
+Search and inspect
+#########################
+
+    # Search package
+    conda search pandas
+
+    # List installed packages
+    conda list
+
+    # List packages in another environment
+    conda list -n myenv
+
+#########################
+Export / recreate environments
+#########################
+
+    # Export environment
+    conda env export > environment.yml
+
+    # Export minimal environment
+    conda env export --from-history > environment.yml
+
+    # Create environment from file
+    conda env create -f environment.yml
+
+    # Update environment from file
+   conda env update -f environment.yml
+
+#########################
+Cleanup and maintenance (Essential for fixing errors like the InvalidArchiveError you saw earlier.)
+#########################
+
+    # Clean cache ( Removes everything in the cache): The "nuclear option" for cache issues. Removes unused packages, metadata, and tarballs
+    conda clean --all
+
+    # Clean unused packages (Removes unused cached package files only.)
+    conda clean --packages
+
+    # Shows a history of changes to your environment.
+    conda list --revisions
+
+    # Roll back your environment to a previous state (lifesaver if a library update breaks your code).
+    conda install --revision <N>
+
+    # Show Conda info (Displays your current configuration, including paths to your pkgs and envs directories.)
+    conda info
+
+
+#########################
+Configuration commands
+#########################
+
+    # Show config
+    conda config --show
+
+    # Add channel ( add a channel permanently) # In Conda, a channel is a source (repository) from which packages are downloaded.
+    # channel = package server + metadata + dependency builds
+    # conda-forge: Largest community-maintained channel
+    # defaults: default channel
+
+    conda config --add channels conda-forge
+
+    # Set solver
+    conda config --set solver classic
+
+    # Set package cache location
+   conda config --add pkgs_dirs D:\conda_pkgs
+
+    # Show channels
+   conda config --show channels

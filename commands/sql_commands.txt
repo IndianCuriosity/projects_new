@@ -1,0 +1,26 @@
+cd path/to/your/project
+git init
+
+git add .
+git add filename.py
+
+git commit -m "Clean commit without secret"
+git push -f origin main
+
+# Connect to github
+git remote add origin https://github.com/username/repo-name.git
+git branch -M main
+
+# The -u sets upstream so future pushes are simpler:
+git push -u origin main
+git push
+
+git status
+
+git --version
+
+#check your repo on GitHub in the browser.
+git remote -v
+
+# Clean only the last commit
+git reset --soft HEAD~1

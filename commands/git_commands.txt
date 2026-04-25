@@ -24,3 +24,149 @@ git remote -v
 
 # Clean only the last commit
 git reset --soft HEAD~1
+
+
+###############################################################################
+
+
+#########################
+Repository setup
+#########################
+
+    # Initialize a repo (Creates a new, empty Git repository in your current folder.)
+    git init
+
+    # Clone an existing repo (Downloads an existing repository from a remote server (like GitHub) to your local machine.)
+    git clone <repo-url>
+
+#########################
+Check status & history
+#########################
+
+    # Show current changes (The most used command. It tells you which files are modified and what is currently staged.)
+    git status
+
+    # Show commit history:
+    git log
+
+    # Compact history view:
+    git log --oneline
+    
+    # Show differences:
+    git diff
+
+
+#########################
+Check status & history
+#########################
+
+The "Staging" Workflow :Git uses a three-tier system: your Working Directory (files you're editing), the Staging Area (files you're preparing to save), 
+and the Repository (files saved permanently).
+
+    # Stage everything (to stage all changes.)
+    git add .
+
+    # Stage a specific file (Moves changes from your directory to the staging area.)
+    git add filename.py
+
+    # Commit changes (Takes a snapshot of your staged changes and saves them to the version history.)
+    git commit -m "message"
+    
+    # Amend last commit:
+    git commit --amend
+
+
+#########################
+Push & pull (Syncing with Remotes)
+#########################
+This is how you collaborate with others and keep your work backed up online.
+
+    # Push changes (Uploads your local commits to the remote server.)
+    git push
+
+    # Push first time (set upstream):
+    git push -u origin main
+
+    # Pull latest changes (Downloads updates and immediately tries to merge them into your current branch (Fetch + Merge).)
+    git pull
+    
+    # Fetch without merging (Downloads updates from the remote repository but doesn't change your local files.)
+    git fetch
+
+
+#########################
+Branching & merging
+#########################
+Branches allow you to work on new features without breaking the main code.
+
+    # Create branch:
+    git branch new-branch
+
+    # Switch branch:
+    git checkout new-branch
+    git switch new-branch ( A modern alternative to checkout for moving between existing branches.)
+
+    # Create + switch (Creates a new branch and switches to it immediately.)
+    git checkout -b new-branch
+    
+    # List your local branches:
+    git branch
+
+    # Delete branch:
+    git branch -d branch-name
+
+    # Combines the history of a different branch into your current one.
+    git merge <branch>
+
+#########################
+Remote repositories
+#########################
+
+    # Add remote:
+    git remote add origin <repo-url>
+
+    # View remotes:
+    git remote -v
+
+    # Change remote URL:
+    git remote set-url origin <new-url>
+    
+
+
+#########################
+Undo mistakes
+#########################
+
+    # Shows a list of all previous commits so you can find where things went wrong.
+    git log
+
+    # Unstage file:
+    git restore --staged filename
+
+    # Discard file changes (Discards local changes in a file and reverts it to the last committed state.)
+    git restore filename
+
+    # Undo last commit (keep files) (Undoes the last commit but keeps your work in the staging area.)
+    git reset --soft HEAD~1
+    
+    # Undo last commit (remove changes):
+    git reset --hard HEAD~1
+
+    # Temporarily "hides" your uncommitted changes so you can switch branches without committing.
+    git stash
+
+
+#########################
+Pro tips (very useful in practice)
+#########################
+
+    # See what changed in last commit:
+    git show
+
+    # Rename branch to main:
+    git branch -M main
+
+    # Force push (use carefully):
+    git push -f
+    
+    Pro-tip: If you ever get stuck in a weird screen after a command (usually the Vim editor), type :q! and hit Enter to get back to safety.
