@@ -1,26 +1,97 @@
-cd path/to/your/project
-git init
 
-git add .
-git add filename.py
+PostgreSQL commands generally fall into two categories: Meta-commands (used in the psql terminal interface, starting with a backslash \) 
+and Standard SQL (the actual queries for data and structure).
 
-git commit -m "Clean commit without secret"
-git push -f origin main
+###########################
+Essential psql Meta-commands
+#########################
+These are your "navigation" tools for exploring the database from the command line.
 
-# Connect to github
-git remote add origin https://github.com/username/repo-name.git
-git branch -M main
+    # List all databases.
+    \l
 
-# The -u sets upstream so future pushes are simpler:
-git push -u origin main
-git push
+    # Connect to a specific database.
+    \c <db_name>
 
-git status
+    # List all tables in the current database.
+    \dt
+    
+    # Show the structure (columns, types, indexes) of a table.
+    \d <table_name>
+    
+    # List all users and their roles/privileges.
+    \du
 
-git --version
+    # List all schemas.
+    \dn
+    
+    # List all functions.
+    \df
 
-#check your repo on GitHub in the browser.
-git remote -v
+    # List all views
+    \dv
 
-# Clean only the last commit
-git reset --soft HEAD~1
+    # Toggle timing to see how long queries take to execute.
+    \timing
+
+    # Quit the psql interface.
+    \q
+
+###########################
+Data Manipulation (DML)
+#########################
+These are the daily drivers used to interact with the data inside your tables.
+
+    # SELECT: Fetch data from a table.
+    SELECT * FROM users WHERE active = true ORDER BY created_at DESC;
+    
+    # INSERT: Add new records.
+    INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com');
+    
+    # UPDATE: Modify existing records.
+    UPDATE users SET email = 'new_email@example.com' WHERE id = 1;
+    
+    # DELETE: Remove records.
+    UDELETE FROM users WHERE id = 1;
+
+
+###########################
+Data Definition (DDL)
+#########################
+Used for creating or changing the actual structure of your database.
+
+    # CREATE TABLE: Define a new table.
+    CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    price NUMERIC(10, 2)
+    );
+    
+    # ALTER TABLE: Modify an existing table (add/remove columns).
+    ALTER TABLE products ADD COLUMN description TEXT;
+    
+    # DROP TABLE: Delete a table entirely.
+    DROP TABLE products;
+
+###########################
+Useful Administrative Queries
+#########################
+These are often used for troubleshooting or performance monitoring.
+
+    # Check Version
+    SELECT version();
+    
+    # Check Active Connections:
+    SELECT pid, usename, query, state FROM pg_stat_activity;
+    
+    # Find Table Size:
+    SELECT pg_size_pretty(pg_total_relation_size('table_name'));
+    
+
+
+Pro Tip: Getting Help
+If you are inside the psql terminal and forget a command:
+
+Use \? for help with backslash meta-commands.
+
+Use \h <SQL_COMMAND> (e.g., \h CREATE TABLE) to see the syntax for a specific SQL statement.
