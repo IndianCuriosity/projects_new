@@ -29,7 +29,8 @@ os.environ['HUGGINGFACEHUB_API_TOKEN'] = HUGGINGFACEHUB_API_TOKEN
 
 # # Model I/O
 # 
-# In LangChain, the central part of any application is the language model. This module provides crucial tools for working effectively with any language model, ensuring it integrates smoothly and communicates well.
+# In LangChain, the central part of any application is the language model. This module provides crucial tools for working effectively with any language model, 
+# ensuring it integrates smoothly and communicates well.
 # 
 # ### Key Components of Model I/O
 # 
@@ -88,16 +89,20 @@ print(response.content)
 
 # ### Accessing Open LLMs with HuggingFace Serverless API
 # 
-# The free [serverless API](https://huggingface.co/inference-api/serverless) lets you implement solutions and iterate in no time, but it may be rate limited for heavy use cases, since the loads are shared with other requests.
+# The free [serverless API](https://huggingface.co/inference-api/serverless) lets you implement solutions and iterate in no time, but it may be rate limited for
+#  heavy use cases, since the loads are shared with other requests.
 # 
-# For enterprise workloads, you can use Inference Endpoints - Dedicated which would be hosted on a specific cloud instance of your choice and would have a cost associated with it. Here we will use the free serverless API which works quite well in most cases.
+# For enterprise workloads, you can use Inference Endpoints - Dedicated which would be hosted on a specific cloud instance of your choice and would have a cost 
+# associated with it. Here we will use the free serverless API which works quite well in most cases.
 # 
 # The advantage is you do not need to download the models or run them locally on a GPU compute infrastructure which takes time and also would cost you a fair amount.
 
 
 # #### Accessing Microsoft Phi-3 Mini Instruct
 # 
-# The Phi-3-Mini-4K-Instruct is a 3.8B parameters, lightweight, state-of-the-art open model trained with the Phi-3 datasets that includes both synthetic data and the filtered publicly available websites data with a focus on high-quality and reasoning dense properties. Check more details [here](https://huggingface.co/microsoft/Phi-3-mini-4k-instruct)
+# The Phi-3-Mini-4K-Instruct is a 3.8B parameters, lightweight, state-of-the-art open model trained with the Phi-3 datasets that includes both synthetic data
+# and the filtered publicly available websites data with a focus on high-quality and reasoning dense properties. Check more details 
+# [here](https://huggingface.co/microsoft/Phi-3-mini-4k-instruct)
 
 from huggingface_hub import login
 
@@ -165,7 +170,11 @@ print(response)
 
 # #### Accessing Google Gemma 2B Instruct
 # 
-# Gemma is a family of lightweight, state-of-the-art open models from Google, built from the same research and technology used to create the Gemini models. They are text-to-text, decoder-only large language models, available in English, with open weights, pre-trained variants, and instruction-tuned variants. Gemma models are well-suited for a variety of text generation tasks, including question answering, summarization, and reasoning. Their relatively small size makes it possible to deploy them in environments with limited resources such as a laptop, desktop or your own cloud infrastructure. Check more details [here](https://huggingface.co/google/gemma-1.1-2b-it)
+# Gemma is a family of lightweight, state-of-the-art open models from Google, built from the same research and technology used to create the Gemini models. 
+# They are text-to-text, decoder-only large language models, available in English, with open weights, pre-trained variants, and instruction-tuned variants.
+#  Gemma models are well-suited for a variety of text generation tasks, including question answering, summarization, and reasoning. Their relatively small 
+# size makes it possible to deploy them in environments with limited resources such as a laptop, desktop or your own cloud infrastructure. Check more details 
+# [here](https://huggingface.co/google/gemma-1.1-2b-it)
 
 
 gemma_repo_id = "google/gemma-2b-it"
@@ -193,11 +202,13 @@ print(response)
 # 
 # The Hugging Face Model Hub hosts over 500k models, 90K+ open LLMs
 # 
-# These can be called from LangChain either through this local pipeline wrapper or by calling their hosted inference endpoints through the `HuggingFaceEndpoint` API we saw earlier.
+# These can be called from LangChain either through this local pipeline wrapper or by calling their hosted inference endpoints through the `HuggingFaceEndpoint` 
+# API we saw earlier.
 # 
 # To use, you should have the `transformers` python package installed, as well as `pytorch`.
 # 
-# Advantages include the model being completely local, high privacy and security. Disadvantages are basically the necessity of a good compute infrastructure, preferably with a GPU
+# Advantages include the model being completely local, high privacy and security. Disadvantages are basically the necessity of a good compute infrastructure,
+#  preferably with a GPU
 
 # #### Accessing Google Gemma 2B and running it locally
 
@@ -234,7 +245,8 @@ print(response)
 
 # ### Accessing Open LLMs in HuggingFace as a Chat Model LLM
 # 
-# Here we will show how to access open LLMs from HuggingFace like Google Gemma 2B and make them have a conversation with you. We will look at the conversation aspect slightly later in the notebook.
+# Here we will show how to access open LLMs from HuggingFace like Google Gemma 2B and make them have a conversation with you. We will look at the conversation
+#  aspect slightly later in the notebook.
 
 from langchain_huggingface import ChatHuggingFace
 
@@ -256,7 +268,8 @@ print(response.content)
 #   - A string (commonly handled by most models)
 #   - A list of dictionaries (for multi-modal inputs, where each dictionary details the type and location of the input)
 # 
-# Additionally, messages have an `additional_kwargs` property, used for passing extra information specific to the message provider, not typically general. A well-known example is `function_call` from OpenAI.
+# Additionally, messages have an `additional_kwargs` property, used for passing extra information specific to the message provider, not typically general.
+#  A well-known example is `function_call` from OpenAI.
 # 
 # ### Specific Message Types
 # 
@@ -307,7 +320,8 @@ response.content
 
 # ## Conversational Prompting with Open LLMs via HuggingFace
 # 
-# Here we use the `ChatModel` API in `ChatHuggingFace` to have a full conversation with any open LLMs while maintaining a full flow of the historical conversations. Here we use the Google Gemma 2B LLM.
+# Here we use the `ChatModel` API in `ChatHuggingFace` to have a full conversation with any open LLMs while maintaining a full flow of the historical 
+# conversations. Here we use the Google Gemma 2B LLM.
 
 llm
 

@@ -19,7 +19,8 @@ os.environ['OPENAI_API_KEY'] = OPENAI_KEY
 
 # ## Chat Models and LLMs
 # 
-# Large Language Models (LLMs) are a core component of LangChain. LangChain does not implement or build its own LLMs. It provides a standard API for interacting with almost every LLM out there.
+# Large Language Models (LLMs) are a core component of LangChain. LangChain does not implement or build its own LLMs. It provides a standard API for 
+# interacting with almost every LLM out there.
 # 
 # There are lots of LLM providers (OpenAI, Hugging Face, etc) - the LLM class is designed to provide a standard interface for all of them.
 
@@ -32,9 +33,11 @@ chatgpt = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 #chatgpt = ChatOpenAI(model='gpt-5.5', temperature=0)
 
 # ## Prompt Templates
-# Prompt templates are pre-designed formats used to generate prompts for language models. These templates can include instructions, few-shot examples, and specific contexts and questions suited for particular tasks.
+# Prompt templates are pre-designed formats used to generate prompts for language models. These templates can include instructions, few-shot examples, and 
+# specific contexts and questions suited for particular tasks.
 # 
-# LangChain provides tools for creating and using prompt templates. It aims to develop model-agnostic templates to facilitate the reuse of existing templates across different language models. Typically, these models expect prompts in the form of either a string or a list of chat messages.
+# LangChain provides tools for creating and using prompt templates. It aims to develop model-agnostic templates to facilitate the reuse of existing templates 
+# across different language models. Typically, these models expect prompts in the form of either a string or a list of chat messages.
 # 
 # ### Types of Prompt Templates
 # 
@@ -44,7 +47,8 @@ chatgpt = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 # 
 # - **ChatPromptTemplate:**
 #   - Designed for chat models, where the prompt consists of a list of chat messages.
-#   - Each chat message includes content and a role parameter. For instance, in the OpenAI Chat Completions API, a chat message could be assigned to an AI assistant, a human, or a system role.
+#   - Each chat message includes content and a role parameter. For instance, in the OpenAI Chat Completions API, a chat message could be assigned to an 
+# AI assistant, a human, or a system role.
 # - **FewShotChatMessagePromptTemplate**
 #   - A few-shot prompt template can be constructed from a set of examples
 # 
@@ -56,7 +60,8 @@ chatgpt = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 # 
 # By default, `PromptTemplate` uses Python's `str.format` syntax for templating.
 # 
-# You can create custom prompt templates that format the prompt in any way you want. For more information, see [Prompt Template Composition](https://python.langchain.com/v0.1/docs/modules/model_io/prompts/composition/).
+# You can create custom prompt templates that format the prompt in any way you want. For more information, see [Prompt Template 
+# Composition](https://python.langchain.com/v0.1/docs/modules/model_io/prompts/composition/).
 
 
 from langchain_core.prompts import PromptTemplate
@@ -104,9 +109,11 @@ for response in responses:
 
 # ### ChatPromptTemplate
 # 
-# The standard prompt format to [chat models](https://python.langchain.com/v0.1/docs/modules/model_io/chat/) is a list of [chat messages](https://python.langchain.com/v0.1/docs/modules/model_io/chat/message_types/).
+# The standard prompt format to [chat models](https://python.langchain.com/v0.1/docs/modules/model_io/chat/) is a list of 
+# [chat messages](https://python.langchain.com/v0.1/docs/modules/model_io/chat/message_types/).
 # 
-# Each chat message is associated with content, and an additional parameter called `role`. For example, in the OpenAI Chat Completions API, a chat message can be associated with an AI assistant, a human or a system role.
+# Each chat message is associated with content, and an additional parameter called `role`. For example, in the OpenAI Chat Completions API, 
+# a chat message can be associated with an AI assistant, a human or a system role.
 
 
 # Updated import paths for prompt templates - using simplified paths:
@@ -182,9 +189,11 @@ for response in responses:
 
 # #### PromptTemplate and ChatPromptTemplate supports LCEL
 # 
-# `PromptTemplate` and `ChatPromptTemplate` implement the [Runnable interface](https://python.langchain.com/v0.1/docs/expression_language/interface/), the basic building block of the LangChain Expression Language (LCEL). This means they support `invoke`, `ainvoke`, `stream`, `astream`, `batch`, `abatch`, `astream_log` calls.
+# `PromptTemplate` and `ChatPromptTemplate` implement the [Runnable interface](https://python.langchain.com/v0.1/docs/expression_language/interface/),
+#  the basic building block of the LangChain Expression Language (LCEL). This means they support `invoke`, `ainvoke`, `stream`, `astream`, `batch`, `abatch`, `astream_log` calls.
 # 
-# `PromptTemplate` accepts a dictionary (of the prompt variables) and returns a `StringPromptValue`. A `ChatPromptTemplate` accepts a dictionary and returns a `ChatPromptValue`.
+# `PromptTemplate` accepts a dictionary (of the prompt variables) and returns a `StringPromptValue`. A `ChatPromptTemplate` accepts a dictionary and returns 
+# a `ChatPromptValue`.
 
 
 text_prompts = ["what is your name?", "explain commercial real estate to me"]

@@ -31,7 +31,8 @@ os.environ['OPENAI_API_KEY'] = OPENAI_KEY
 
 # ## Chat Models and LLMs
 # 
-# Large Language Models (LLMs) are a core component of LangChain. LangChain does not implement or build its own LLMs. It provides a standard API for interacting with almost every LLM out there.
+# Large Language Models (LLMs) are a core component of LangChain. LangChain does not implement or build its own LLMs. It provides a standard API for 
+# interacting with almost every LLM out there.
 # 
 # There are lots of LLM providers (OpenAI, Hugging Face, etc) - the LLM class is designed to provide a standard interface for all of them.
 
@@ -46,7 +47,8 @@ chatgpt = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 # ## Tracking LLM Costs
 # 
-# Typically LLMs like ChatGPT charge you based on the number of tokens per request and response. You can track your token usage for specific calls. It is currently only implemented for the OpenAI API.
+# Typically LLMs like ChatGPT charge you based on the number of tokens per request and response. You can track your token usage for specific calls. 
+# It is currently only implemented for the OpenAI API.
 
 
 # Updated import path for callbacks:
@@ -74,9 +76,11 @@ cb.total_cost
 # 
 # LangChain includes an optional caching layer for language model APIs (LLMs). This caching feature is beneficial for two main reasons:
 # 
-# 1. **Cost Efficiency:** By caching responses, you reduce the number of API calls made to LLM providers, especially helpful if you are frequently requesting the same completions. This can significantly lower costs.
+# 1. **Cost Efficiency:** By caching responses, you reduce the number of API calls made to LLM providers, especially helpful if you are frequently requesting 
+# the same completions. This can significantly lower costs.
 # 
-# 2. **Performance Improvement:** Caching can enhance your application's speed by decreasing the need for repeated API calls to the LLM provider, making interactions quicker and more efficient.
+# 2. **Performance Improvement:** Caching can enhance your application's speed by decreasing the need for repeated API calls to the LLM provider, 
+# making interactions quicker and more efficient.
 # 
 
 
@@ -138,7 +142,8 @@ chatgpt.invoke(chat_template.format())
 
 # ## Streaming in LLMs
 # 
-# All language model interfaces (LLMs) in LangChain implement the `Runnable` interface, which provides default methods such as `ainvoke`, `batch`, `abatch`, `stream`, and `astream`. This setup equips all LLMs with basic streaming capabilities.
+# All language model interfaces (LLMs) in LangChain implement the `Runnable` interface, which provides default methods such as `ainvoke`, `batch`, 
+# `abatch`, `stream`, and `astream`. This setup equips all LLMs with basic streaming capabilities.
 # 
 # ### Streaming Defaults:
 # 
@@ -147,7 +152,8 @@ chatgpt.invoke(chat_template.format())
 # 
 # ### Limitations:
 # 
-# - These default implementations do not support token-by-token streaming. For such detailed streaming, the LLM provider must offer native support. However, the default setup ensures that your code expecting an iterator of tokens will function correctly within these constraints.
+# - These default implementations do not support token-by-token streaming. For such detailed streaming, the LLM provider must offer native support. 
+# However, the default setup ensures that your code expecting an iterator of tokens will function correctly within these constraints.
 # 
 
 

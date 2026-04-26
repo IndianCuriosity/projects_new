@@ -20,7 +20,8 @@ os.environ['OPENAI_API_KEY'] = OPENAI_KEY
 
 # ## Chat Models and LLMs
 # 
-# Large Language Models (LLMs) are a core component of LangChain. LangChain does not implement or build its own LLMs. It provides a standard API for interacting with almost every LLM out there.
+# Large Language Models (LLMs) are a core component of LangChain. LangChain does not implement or build its own LLMs. It provides a standard API for
+#  interacting with almost every LLM out there.
 # 
 # There are lots of LLM providers (OpenAI, Hugging Face, etc) - the LLM class is designed to provide a standard interface for all of them.
 
@@ -34,13 +35,16 @@ chatgpt = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
 
 
 # ## Output Parsers
-# Output parsers are essential in Langchain for structuring the responses from language models. Below, we will discuss the role of output parsers and include examples using Langchain's specific parser types: PydanticOutputParser, JsonOutputParser, and CommaSeparatedListOutputParser.
+# Output parsers are essential in Langchain for structuring the responses from language models. Below, we will discuss the role of output parsers and 
+# include examples using Langchain's specific parser types: PydanticOutputParser, JsonOutputParser, and CommaSeparatedListOutputParser.
 # 
 # - **Pydantic parser:**
-#   - This parser allows the specification of an arbitrary Pydantic Model to query LLMs for outputs matching that schema. Pydantic's BaseModel functions similarly to a Python dataclass but includes type checking and coercion.
+#   - This parser allows the specification of an arbitrary Pydantic Model to query LLMs for outputs matching that schema. Pydantic's BaseModel functions s
+# imilarly to a Python dataclass but includes type checking and coercion.
 # 
 # - **JSON parser:**
-#   - Users can specify an arbitrary JSON schema with this parser to ensure outputs from LLMs adhere to that schema. Pydantic can also be used to declare your data model here.
+#   - Users can specify an arbitrary JSON schema with this parser to ensure outputs from LLMs adhere to that schema. Pydantic can also be used to declare 
+# your data model here.
 # 
 # - **CSV parser:**
 #   - Useful for outputs requiring a list of items separated by commas. This parser facilitates the extraction of comma-separated values from model outputs.
