@@ -15,23 +15,17 @@
 
 
 # ## Enter API Tokens
-
-
 # #### Enter your Open AI Key here
 # 
 # You can get the key from [here](https://platform.openai.com/api-keys) after creating an account or signing in
 
 
 from getpass import getpass
-
 OPENAI_KEY = getpass('Please enter your Open AI API Key here: ')
 
 
 # ## Setup necessary system environment variables
-
-
 import os
-
 os.environ['OPENAI_API_KEY'] = OPENAI_KEY
 
 
@@ -124,7 +118,7 @@ chatgpt.invoke(chat_template.format())
 # We can do the same thing with a SQLite cache
 from langchain_community.cache import SQLiteCache
 
-set_llm_cache(SQLiteCache(database_path="langchain.db"))
+set_llm_cache(SQLiteCache(database_path="db_others/langchain.db"))
 
 
 %%time

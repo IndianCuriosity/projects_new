@@ -28,8 +28,8 @@ os.environ['OPENAI_API_KEY'] = OPENAI_KEY
 from langchain_openai import ChatOpenAI
 
 # Updated parameter name from model_name to model:
-#chatgpt = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-chatgpt = ChatOpenAI(model='gpt-5.5', temperature=0)
+chatgpt = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+#chatgpt = ChatOpenAI(model='gpt-5.5', temperature=0)
 
 # ## Prompt Templates
 # Prompt templates are pre-designed formats used to generate prompts for language models. These templates can include instructions, few-shot examples, and specific contexts and questions suited for particular tasks.

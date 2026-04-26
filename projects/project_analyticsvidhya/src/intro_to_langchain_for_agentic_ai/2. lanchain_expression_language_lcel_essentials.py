@@ -19,8 +19,8 @@ os.environ['OPENAI_API_KEY'] = OPENAI_KEY
 # ## Connect to the LLM
 from langchain_openai import ChatOpenAI
 # Parameter name change: 'model_name' is now 'model' in ChatOpenAI class
-#chatgpt = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-chatgpt = ChatOpenAI(model='gpt-5.5', temperature=0)
+chatgpt = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+#chatgpt = ChatOpenAI(model='gpt-5.5', temperature=0)
 
 
 # ## Create LCEL LLM Chain
