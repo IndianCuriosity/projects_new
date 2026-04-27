@@ -54,7 +54,7 @@ chatgpt = ChatOpenAI(model='gpt-4o-mini', temperature=0)
 
 
 # Updated import paths for prompt templates:
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 
 prompt_txt = """Explain to me about {topic} in 3 bullet points"""
 prompt = ChatPromptTemplate.from_template(prompt_txt)
@@ -71,9 +71,9 @@ llm_chain = (
 from IPython.display import Image, display
 
 display(Image(llm_chain.get_graph().draw_mermaid_png()))
-
-
 print(llm_chain.get_graph().draw_ascii())
+
+print(llm_chain.get_graph().draw_mermaid())
 
 
 response = llm_chain.invoke({'topic': 'Generative AI'})
@@ -131,7 +131,7 @@ reviews = [
     ]
 
 
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 
 prompt = """
             Act as a product review analyst.

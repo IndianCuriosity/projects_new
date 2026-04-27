@@ -43,7 +43,7 @@ chatgpt = ChatOpenAI(model='gpt-4o-mini', temperature=0)
 
 
 # Updated import paths for prompt templates:
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 
 prompt_txt = """{query}"""
 prompt = ChatPromptTemplate.from_template(prompt_txt)
@@ -81,7 +81,7 @@ print(response.content)
 # - ChatMessageHistory
 # - SQLChatMessageHistory
 
-
+'''
 # ### Conversation Chains with ConversationBufferMemory
 # 
 # This is the simplest version of in-memory storage of historical conversation messages. It is basically a buffer for storing conversation memory.
@@ -90,9 +90,13 @@ print(response.content)
 
 
 # Updated import paths for prompt templates - using simplified paths:
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.memory import ConversationBufferMemory
-from langchain.schema.runnable import RunnablePassthrough, RunnableLambda
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+#from langchain.memory import ConversationBufferMemory
+#from langchain_community.chat_message_histories import InMemoryChatMessageHistory
+from langchain_core.runnables import RunnablePassthrough, RunnableLambda
+from langchain_core.chat_history import InMemoryChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+
 
 SYS_PROMPT = """Act as a helpful assistant and give brief answers"""
 prompt = ChatPromptTemplate.from_messages(
@@ -103,8 +107,8 @@ prompt = ChatPromptTemplate.from_messages(
     ]
 )
 
-memory = ConversationBufferMemory(return_messages=True)
-
+#memory = ConversationBufferMemory(return_messages=True)
+memory = InMemoryChatMessageHistory()
 
 # function to get historical conversation messages from the memory
 memory.load_memory_variables({})
@@ -189,8 +193,113 @@ print(response.content)
 
 
 memory.load_memory_variables({})
+'''
 
 
+
+###########################################################################################
+# ## Conversation Chains with RunnableWithMessageHistory:  Instead of ConversationBufferMemory
+###########################################################################################
+
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.chat_history import InMemoryChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful assistant."),
+    MessagesPlaceholder(variable_name="history"),
+    ("human", "{query}")
+])
+
+llm_chain = (
+    prompt
+      |
+    chatgpt
+)
+
+store = {}
+
+def get_session_history(session_id):
+    if session_id not in store:
+        store[session_id] = InMemoryChatMessageHistory()
+    return store[session_id]
+
+conversation = RunnableWithMessageHistory(
+    llm_chain,
+    get_session_history,
+    input_messages_key="query",
+    history_messages_key="history"
+)
+
+response = conversation.invoke(
+    {"query": "My name is Sugat."},
+    config={"configurable": {"session_id": "user_1"}}
+)
+
+print(response.content)
+
+response = conversation.invoke(
+    {"query": "What is my name?"},
+    config={"configurable": {"session_id": "user_1"}}
+)
+
+print(response.content)
+
+
+
+###########################################################################################
+# ## Conversation Chains with RunnableWithMessageHistory ( last n messages) : Instead of ConversationBufferWindowMemory
+###########################################################################################
+
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.chat_history import InMemoryChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful assistant."),
+    MessagesPlaceholder(variable_name="history"),
+    ("human", "{query}")
+])
+
+llm_chain = (
+    prompt
+      |
+    chatgpt
+)
+
+store = {}
+
+def get_session_history(session_id):
+    if session_id not in store:
+        store[session_id] = InMemoryChatMessageHistory()
+    
+    # keep only last 4 messages = last 2 user/AI turns
+    store[session_id].messages = store[session_id].messages[-4:]
+
+    return store[session_id]
+
+conversation = RunnableWithMessageHistory(
+    llm_chain,
+    get_session_history,
+    input_messages_key="query",
+    history_messages_key="history"
+)
+
+response = conversation.invoke(
+    {"query": "My name is Sugat."},
+    config={"configurable": {"session_id": "user_1"}}
+)
+
+print(response.content)
+
+response = conversation.invoke(
+    {"query": "What is my name?"},
+    config={"configurable": {"session_id": "user_1"}}
+)
+
+print(response.content)
+
+""" 
 # ### Conversation Chains with ConversationBufferWindowMemory
 # 
 # If you have a really long conversation, you might exceed the max token limit of the context window allowed for the LLM when using `ConversationBufferMemory` 
@@ -263,8 +372,87 @@ print(response.content)
 
 
 memory.load_memory_variables({})
+ """
+###########################################################################################
+# ## Conversation Chains with RunnableWithMessageHistory ( with summary) : Instead of ConversationSummaryMemory
+###########################################################################################
+
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.chat_history import InMemoryChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+store = {}
+summaries = {}
+
+SUMMARY_TRIGGER = 6   # summarize after 6 messages
 
 
+def summarize(session_id):
+
+    history = store[session_id].messages
+    existing_summary = summaries.get(session_id, "")
+
+    summary_prompt = f"""
+    Current summary:
+    {existing_summary}
+
+    Extend the summary using the conversation below:
+    {history}
+    """
+
+    summary = llm.invoke(summary_prompt).content
+
+    summaries[session_id] = summary
+    store[session_id].messages = []  # clear old messages
+
+
+def get_session_history(session_id):
+
+    if session_id not in store:
+        store[session_id] = InMemoryChatMessageHistory()
+        summaries[session_id] = ""
+
+    if len(store[session_id].messages) > SUMMARY_TRIGGER:
+        summarize(session_id)
+
+    return store[session_id]
+
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "Conversation summary: {summary}"),
+    MessagesPlaceholder("history"),
+    ("human", "{input}")
+])
+
+
+def inject_summary(inputs, config):
+    session_id = config["configurable"]["session_id"]
+    return {**inputs, "summary": summaries.get(session_id, "")}
+
+
+chain = inject_summary | prompt | llm
+
+
+conversation = RunnableWithMessageHistory(
+    chain,
+    get_session_history,
+    input_messages_key="input",
+    history_messages_key="history"
+)
+
+
+response = conversation.invoke(
+    {"input": "My name is Sugat"},
+    config={"configurable": {"session_id": "user1"}}
+)
+
+print(response.content)
+
+
+""" 
 # ### Conversation Chains with ConversationSummaryMemory
 # 
 # If you have a really long conversation or a lot of messages, you might exceed the max token limit of the context window allowed for the LLM when using 
@@ -325,6 +513,11 @@ response = conversation_chain.invoke(query)
 memory.save_context(query, {"output": response.content}) # remember to save your current conversation in memory
 print(response.content)
 
+ """
+
+###########################################################################################
+# ## Conversation Chains with vectorstores   : Instead of VectorStoreRetrieverMemory
+###########################################################################################
 
 # ### Conversation Chains with VectorStoreRetrieverMemory
 # 
@@ -342,9 +535,8 @@ print(response.content)
 # and more powerful `text-embedding-3-large` model.
 
 
-from langchain_openai import OpenAIEmbeddings
-
 # details here: https://openai.com/blog/new-embedding-models-and-api-updates
+from langchain_openai import OpenAIEmbeddings
 openai_embed_model = OpenAIEmbeddings(model='text-embedding-3-small')
 
 
@@ -353,6 +545,11 @@ openai_embed_model = OpenAIEmbeddings(model='text-embedding-3-small')
 # Here we use the Chroma vector DB and initialize an empty database collection to store conversation messages
 
 
+
+
+
+
+""" 
 from langchain_chroma import Chroma
 
 # create empty vector DB
@@ -414,7 +611,8 @@ print(response.content)
 
 query = {'query': 'What about the cheetah?'}
 response = conversation_chain.invoke(query)
-memory.save_context(query, {"output": response.content}) # remember to save your current conversation in memory
+memory.save_context(query, {"output": response.content}) # re
+member to save your current conversation in memory
 print(response.content)
 
 
@@ -429,7 +627,7 @@ query = {'query': 'What about machine learning?'}
 response = conversation_chain.invoke(query)
 memory.save_context(query, {"output": response.content}) # remember to save your current conversation in memory
 print(response.content)
-
+ """
 
 # ### Multi-user Conversation Chains with ChatMessageHistory
 # 
