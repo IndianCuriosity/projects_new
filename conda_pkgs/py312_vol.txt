@@ -43,7 +43,7 @@ pip install langgraph
 
 conda install -c conda-forge psycopg
 
-pip install -U langchain-chroma
+pip install langchain-chroma
 
 #####################
 conda install pytorch torchvision torchaudio pytorch-cuda -c pytorch -c nvidia
