@@ -1,8 +1,12 @@
 
 
-# https://realpython.com/python-concurrency/
-
 ##########################################################################################################################################
+
+
+# https://realpython.com/python-concurrency/
+# https://docs.python.org/3/library/threading.html#
+# https://docs.python.org/3/library/threading.html#event-objects
+
 
 # Python Module     	CPU	                Multitasking	            Switching Decision
 # asyncio	            One	                Cooperative	                The tasks decide when to give up control.
