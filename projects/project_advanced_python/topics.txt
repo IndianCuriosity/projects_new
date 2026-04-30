@@ -126,8 +126,8 @@ them using:
 ## 6. Descriptor Protocol
 ######################################################################
 
-Descriptors are the secret sauce behind `property`, `classmethod`, and `staticmethod`. A descriptor is an object attribute with "binding behavior," one whose attribute 
-access is overridden by methods in the descriptor protocol: `__get__`, `__set__`, and `__delete__`.
+Descriptors are the secret sauce behind `property`, `classmethod`, and `staticmethod`. A descriptor is an object attribute with "binding behavior," 
+one whose attribute access is overridden by methods in the descriptor protocol: `__get__`, `__set__`, and `__delete__`.
 
 ---
 
@@ -147,3 +147,18 @@ Python isn't a purely functional language, but it borrows heavily from them:
 ######################################################################
 
 Which of these concepts aligns most with the specific project or problem you're currently working on?
+
+
+_super_
+deque
+collections
+functools
+
+
+rest API
+Socket Programming
+gPRC
+Network programming
+unnittest
+pytest
+debugging
