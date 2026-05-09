@@ -326,6 +326,8 @@ print(Person.total())
 # 5. @dataclass (from dataclasses)
 # -------------------------------------------------------------
 # Auto-generates:
+# a dataclass is a specialized class designed primarily for storing data.
+# @dataclass decorator to automatically generate "boilerplate" methods that you would otherwise have to write manually.
 
 # __init__
 # __repr__

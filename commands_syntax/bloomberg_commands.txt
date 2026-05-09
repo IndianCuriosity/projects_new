@@ -1,0 +1,59 @@
+
+#############################################################################################################################################
+Yes, you can run USER <GO> and check for your player type by clicking the pencil icon in the top left corner.
+
+You can also run BPS <GO> >> navigate to your preferred asset class in the left sidebar (e.g. "Foreign Exchange" >> then "cheat sheets" >> an
+d you can find resources directing you to a list of functions that may be useful for your workflow
+#############################################################################################################################################
+
+##########################
+Rates:
+##########################
+IRSB <GO> is the core monitor for a country’s real-time, intraday interest rate swap yields and spreads, with historical context. 
+        Use the country/region drop-down and the tabs to switch between swap types, then hover or right-click a tenor to pull up analytics like DES <GO>.
+
+FXTF <GO> is designed for finding the available swap tickers by region, currency, and product type. It is the fastest way to browse “Interest Rate Swaps”, 
+        “Basis Swaps”, and “Swap Spreads” sets
+
+SWPM <GO> is used to build and value swaps when you need something that is not available as a standard generic ticker, or when you need to change 
+        conventions or add spreads. Use “Solver” in SWPM <GO> to solve for the par fixed rate that sets NPV to zero after you set the swap terms and floating index.
+
+BTMM <GO> provides the rates “dashboard” for a country, including money-market benchmarks and related rate instruments, which is useful context 
+        alongside IRS monitoring and curve work.
+
+SDR <GO> and SDRV <GO> are used for swap trade activity and volume views, which can help validate where liquidity is printing when you are 
+        analyzing levels and spreads.
+
+ICVS: Swap Curve Builder
+
+FXFM : Fx Rate Forecast Model
+
+##########################
+FX:
+##########################
+FXIP <GO> provides a dashboard-style view by region or country, combining FX rates, charts, and related market context such as fixed income and news. 
+        It includes an FX Markets Overview tab and an FX Forwards tab for forward-rate analysis.
+
+FXC <GO> displays a matrix of spot, forward, and fixing rates, useful as a live “at-a-glance” monitor across a basket of currencies.
+
+WCRS <GO> ranks and compares currencies across metrics such as returns, interest rates, volatility, carry trade, CDS, and PPP. 
+        It supports both visual and table-style comparisons, and you can set a base currency and basket, including custom baskets.
+
+FRD <GO> shows market-consensus FX forward points and outright forwards across standard tenors and custom dates, and it is commonly used to 
+        view the forward curve for a pair.
+
+FXFA <GO> focuses on FX carry and curve-style analytics via implied yields and FX swap relationships between spot, forwards, and interest rates.
+
+FXFC : Fx Forecasts
+
+
+##########################
+FX Options:
+##########################
+VCA FX <GO>? This function is is designed as a cross-asset volatility monitor/screener where you can view implied vol, implied versus realized, skew, 
+        term structure, and the associated historical context including percentile ranking.
+
+OVDV FX <GO>
+
+VOLC FX <GO>
+

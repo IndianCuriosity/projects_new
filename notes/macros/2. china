@@ -1,0 +1,733 @@
+###########################################################################################################################################################
+CHINA MACRO TRADING FRAMEWORK
+###########################################################################################################################################################
+
+Below is a **China Macro Trading Framework** tailored for discretionary and systematic macro trading. It is structured exactly like the frameworks we built for India, Korea, Singapore, Australia, and New Zealand — but optimized for China’s unique institutional setup, policy regime, and capital-flow structure.
+
+---
+
+# 🇨🇳 **CHINA MACRO TRADING FRAMEWORK**
+
+![Image](https://www.matthewsasia.com/globalassets/3.-insights/f.-sinology/2021/why-china-a-macro-perspective/si073_figure-1_imf-world-gdp_web-01-min.jpg?utm_source=chatgpt.com)
+
+![Image](https://miro.medium.com/1%2A2Pxifzc2DgPcOuYKfxGv6Q.jpeg?utm_source=chatgpt.com)
+
+![Image](https://d1-invdn-com.investing.com/content/pic91be988f089576700381a953f3f0783d.png?utm_source=chatgpt.com)
+
+![Image](https://cdn.statcdn.com/Infographic/images/normal/18939.jpeg?utm_source=chatgpt.com)
+
+![Image](https://cdn.statcdn.com/Infographic/images/normal/32871.jpeg?utm_source=chatgpt.com)
+
+China is *policy-directed*, *credit-driven*, and *structurally imbalanced*. Macro trading in China therefore revolves around:
+
+**(1) Credit cycle**,
+**(2) Property cycle**,
+**(3) PBoC liquidity regime**,
+**(4) FX policy band management**,
+**(5) Fiscal impulse & SOE/Local Government behavior**,
+**(6) Geopolitical risk premium**,
+**(7) External vs internal demand mismatch**.
+
+To trade China successfully, you must treat it as a *policy machine* where the hierarchy of signals determines the macro direction.
+
+---
+
+# 1️⃣ POLICY & INSTITUTIONAL FRAMEWORK
+
+## **A. PBoC Framework — "Quantity First, Price Second"**
+
+PBoC does not target interest rates the way DM central banks do. Instead:
+
+**Main levers:**
+
+* **MLF (Medium-term Lending Facility)** → guides **LPR**
+* **OMO Reverse Repo Rates** → short-end anchor
+* **RRR Cuts** → primary easing tool
+* **Window Guidance** → direct lending targets to banks
+* **FX Fixing (CNY midpoint)** → controls currency volatility
+
+**Trading implications:**
+
+* China easing ≠ rate cuts → it's usually **RRR** + **credit guidance** + **targeted liquidity**.
+* CNY direction is more about **fixing bias** than interest-rate differentials.
+
+---
+
+## **B. Politburo & Policy Cycles**
+
+Every quarter, Politburo meetings set the macro tone.
+
+**Key words to trade:**
+
+* “稳增长” (stabilize growth) → bullish China assets, EM beta
+* “房住不炒” (housing for living, not speculation) → bearish property, bearish CNH
+* “扩大内需” (expand domestic demand) → bullish consumption equities
+* “双循环” (dual circulation) → bullish onshore bonds + neutral/bearish CNY
+* “金融风险防范” (financial risk control) → bearish credit, bearish equities
+
+**This is like your "FOMC minutes", but the signal is much stronger.**
+
+---
+
+# 2️⃣ CHINA MACRO CYCLE — CREDIT DRIVES EVERYTHING
+
+![Image](https://d1-invdn-com.investing.com/content/pic91be988f089576700381a953f3f0783d.png?utm_source=chatgpt.com)
+
+![Image](https://cdn.macromicro.me/discuss/a2f11d71-502478.png?utm_source=chatgpt.com)
+
+China’s macro cycle = **credit cycle**, not business cycle.
+
+## **Credit Impulse (CI)**
+
+The single most important macro indicator for China.
+
+* **Leads global PMIs by ~9 months**
+* **Drives commodities (copper, iron ore)**
+* **Drives AUD, NZD, KRW**
+* **Drives EM assets**
+* **Correlated with global inflation swings**
+
+When **CI turns up** → go long:
+
+* AUD, NZD, KRW
+* Copper, iron ore
+* Chinese high yield (if no property stress)
+* EM FX high beta
+* Steepeners in global curves
+
+When **CI turns down** → short:
+
+* Metals
+* EM beta
+* CNY correlation trades
+* Property equities
+
+---
+
+# 3️⃣ PROPERTY SECTOR — CHINA’S TRUE BUSINESS CYCLE
+
+China’s property sector = ~25–30% of GDP (direct + indirect).
+
+## **Key signals to monitor:**
+
+* **Land sales** (crucial for LGFV financing)
+* **New home starts**
+* **Property developer bond spreads**
+* **Mortgage rate cuts & relaxation**
+* **Tier-1 vs Tier-3 housing price divergence**
+* **Housing inventories**
+
+**If property stabilizes → CNY strengthens, equities rally, curves steepen.**
+**If property deteriorates → CNH weakens, credit stress rises, PBoC injects liquidity.**
+
+---
+
+# 4️⃣ FX FRAMEWORK FOR CNY & CNH
+
+![Image](https://www.researchgate.net/publication/348165039/figure/fig2/AS%3A976413293293570%401609806478461/USD-CNY-1M-Historical-Chart.ppm?utm_source=chatgpt.com)
+
+![Image](https://pbs.twimg.com/media/FBYvSaHUcAI6vdm.png?utm_source=chatgpt.com)
+
+China’s FX regime is a *managed float* with a midpoint fixing.
+
+## **Three levers of FX policy:**
+
+### 1. **Fixing Bias ("Counter-cyclical factor")**
+
+Most important tool. A strong fix can overpower:
+
+* interest-rate differentials
+* equity flows
+* geopolitical risk
+
+**If fix deviation > 200–300 pips → very strong signal.**
+
+### 2. **Liquidity Tightening/Easing**
+
+* Tight liquidity → stronger CNH
+* Looser liquidity → weaker CNH
+
+### 3. **Offshore CNH Liquidity Squeeze**
+
+* PBoC drains CNH → increases CNH funding → CNH strengthens
+* Classic tool during depreciation pressure
+
+---
+
+## **How to Trade China FX**
+
+### **Bullish CNY trades**
+
+* When fixing is consistently stronger
+* Improving credit impulse
+* Stabilizing property data
+* Supportive geopolitics
+* USDCNH risk-reversal skew turning to calls
+
+### **Bearish CNY trades**
+
+* Weak fix, especially during USD weakness
+* Equity outflows
+* Property defaults
+* Fiscal stress at LGFVs
+* Strong USD + wide US–China rate differentials
+
+**Options:**
+
+* Long CNH variance → high policy uncertainty
+* Sell top-side USDCNH RR when fixing support is very strong
+* Buy downside CNY digital when Politburo signals stimulus
+
+---
+
+# 5️⃣ CHINA RATES (CGBs) TRADING FRAMEWORK
+
+China government bonds behave differently from DM bonds.
+
+## **Drivers of CGB yields**
+
+* **PBoC liquidity injections**
+* **RRR cuts**
+* **OMO operations**
+* **Fiscal issuance calendar (especially LGFV refi pressure)**
+* **Credit stress episodes**
+
+## **Trade structures**
+
+* **Bull Flatteners** during easing
+* **Bear Steepeners** when fiscal stimulus ramps up
+* **Long Front End (1–3y)** when PBoC hints at targeted easing
+* **Receive NDIRS** (swap curve) instead of cash bonds for cleaner expression
+
+**China rates ≠ US rates. The bond market is highly flow-driven and anchored by policy.**
+
+---
+
+# 6️⃣ EQUITY MACRO FRAMEWORK (CSI300, ChiNext, HSCEI)
+
+China equities trade on:
+
+1. **Liquidity**
+2. **Policy tone**
+3. **Property cycle**
+4. **Tech regulation**
+5. **Foreign inflows (Northbound via Stock Connect)**
+6. **P/E compression from geopolitical risks**
+
+## **Bullish China equity conditions**
+
+* Credit impulse turning positive
+* Stronger policy tone from Politburo
+* Fiscal impulse via infrastructure
+* Stabilizing property sector
+
+## **Bearish China equity conditions**
+
+* Regulatory tightening (especially tech)
+* Worsening LGFV defaults
+* Capital outflows
+* Property downturn accelerates
+
+---
+
+# 7️⃣ CHINA COMMODITY MACRO FRAMEWORK
+
+China is the marginal buyer of:
+
+* Iron ore
+* Copper
+* Coal
+* Steel
+* Aluminum
+
+**To trade these:**
+
+* Track **credit impulse**
+* Monitor **infrastructure spending**
+* Watch **property starts**
+* Track **inventory levels at ports**
+
+---
+
+# 8️⃣ CHINA GEOPOLITICS & RISK PREMIA
+
+Risk premia enters via:
+
+* US–China tensions
+* Tech export controls
+* Taiwan election cycles
+* Sanctions risk
+* Supply-chain resilience policies
+
+**When geopolitics worsens:**
+
+* CNH weakens
+* China equities sell off
+* Global semiconductors trade defensively
+* Volatility rises in CNY options
+
+---
+
+# 9️⃣ FLOW ANALYSIS — THE REAL DRIVERS
+
+Key market participants:
+
+### **1. Banks / SOE flows**
+
+* Large role in FX fixing
+* Policy guidance distorts natural market signals
+
+### **2. Property developers**
+
+* Huge USD offshore bond issuance historically
+* Default risk drives EM credit spreads
+
+### **3. Northbound Southbound flows (Stock Connect)**
+
+* Fast money indicator for short-term direction
+
+### **4. Exporters / Importers**
+
+* Seasonal CNH supply/demand
+* Q1 export receipts → CNH strength
+* Q4 import payments → CNH weakness
+
+---
+
+# 1️⃣0️⃣ DATASET CHECKLIST FOR A SYSTEMATIC CHINA MACRO MODEL
+
+Here is a clean input checklist:
+
+### **Growth**
+
+* NBS PMI
+* Caixin PMI
+* Industrial production
+* Retail sales
+* Fixed asset investment
+* Electricity consumption
+
+### **Credit**
+
+* Total Social Financing (TSF)
+* M2
+* Credit impulse (12-month change as % GDP)
+* Entrusted loans, trust loans
+
+### **Property**
+
+* New home starts
+* Tier-1 price index
+* Land sales revenue
+* Mortgage rates
+
+### **Liquidity**
+
+* SHIBOR, DR007
+* PBoC reverse repo operations
+* MLF operations
+* RRR changes
+
+### **FX**
+
+* Fixing bias
+* CFETS RMB Index
+* Onshore/offshore spread
+* CNH forward points
+
+### **Flows**
+
+* SAFE FX settlement data
+* Stock Connect flows
+* Bond Connect flows
+
+---
+
+# 1️⃣1️⃣ BEST MACRO TRADES BY REGIME
+
+## **Regime A: Credit Expansion**
+
+* Long AUD, NZD, KRW
+* Long copper, iron ore
+* Long China equities (growth sectors)
+* Short USDCNH
+* Receive CNY rates
+
+## **Regime B: Credit Contraction**
+
+* Long USD vs CNH
+* Long USTs (global disinflation spillover)
+* Short metals
+* Short EM beta
+
+## **Regime C: Property Stress**
+
+* Long USDCNH
+* Long CGBs
+* Short Chinese HY credit
+
+## **Regime D: Geopolitical Escalation**
+
+* Long CNH vol
+* Short China tech
+* Long USDJPY
+
+---
+
+# 1️⃣2️⃣ SUMMARY: HOW TO APPROACH TRADING CHINA
+
+**China = a policy-driven, credit-centric macro system.**
+
+To trade it well:
+
+1. **Follow the policy cycle**
+2. **Monitor credit impulse**
+3. **Watch property health**
+4. **Decode fixing signals**
+5. **Track liquidity**
+6. **Account for geopolitics**
+7. **Use flow analysis to time entries**
+
+If you treat China like a typical market, you will lose money.
+If you treat it as a *policy machine*, you will understand the flows.
+
+---
+
+Would you like:
+
+✅ A **factor-based trading model** for China (Python code)?
+✅ A **China credit impulse forecasting model**?
+✅ A **China macro dashboard** (indicators + interpretation)?
+✅ A **CNY FX trading playbook** with option structures?
+
+###########################################################################################################################################################
+funding rate and liquidity implications in China
+###########################################################################################################################################################
+
+Below is a **clear and complete explanation of China’s FUNDING RATES and LIQUIDITY SYSTEM**, and how they affect **CNY**, **rates**, **credit**, **equities**, and overall macro trading.
+This is one of the most misunderstood parts of China macro.
+
+---
+
+# 🇨🇳 **FUNDING RATES & LIQUIDITY IN CHINA MACRO TRADING**
+
+### (DR007, SHIBOR, OMO, RRR, MLF, Window Guidance — and how they interact)
+
+![Image](https://s3.tradingview.com/w/wb5kFP4E_mid.webp?v=1677199718\&utm_source=chatgpt.com)
+
+![Image](https://cdn.macromicro.me/files/charts/935/935-en.png?v=1755117749\&utm_source=chatgpt.com)
+
+![Image](https://assets.bwbx.io/images/users/iqjWHBFdfxIU/i7MuOGLeK8G4/v0/-1x-1.webp?utm_source=chatgpt.com)
+
+![Image](https://img.caixin.com/2023-03-17/167905739377695.png?utm_source=chatgpt.com)
+
+China has a **unique money market structure**. Unlike the Fed (price-based framework), the PBoC operates a **quantity-based liquidity system**, anchored on **funding rates** that reflect *administratively managed liquidity*, not purely market conditions.
+
+To understand China’s macro and CNY, you must understand two things:
+
+1. **Funding rates = the truth of market stress or ease**
+2. **Liquidity operations (RRR, OMO, MLF) = the PBoC’s policy signals**
+
+Let’s break it down.
+
+---
+
+# 1️⃣ KEY FUNDING RATES IN CHINA
+
+## **1. DR007 — The TRUE policy rate benchmark**
+
+* DR = **Depository Institutions' Repo Rate**
+* 007 = **7-day tenor**
+* Most important money-market rate in China
+* Anchors PBoC’s operating target
+
+**Why DR007 matters most:**
+
+* Banks use repos to fund their assets
+* PBoC manages this rate through liquidity injections
+* It is the cleanest indicator of *tightness vs looseness*
+
+### **Interpretation for trading**:
+
+* **DR007 below 1.8%** → liquidity flush → bond bullish → CNY weakening bias
+* **DR007 above 2.3%** → liquidity tight → bond bearish → CNY strengthening bias (CNH squeeze)
+* **High volatility in DR007** → balance-sheet stress at banks → risk-off for A-shares
+
+---
+
+## **2. SHIBOR (Shanghai Interbank Offered Rates)**
+
+* Driven by **market sentiment**, less direct PBoC control
+* Used for pricing loans, derivatives, swaps
+* More volatile than DR007
+
+### How traders use SHIBOR:
+
+* **3M SHIBOR**: medium-term liquidity sentiment
+* **1W SHIBOR**: tactical liquidity pressure
+
+But SHIBOR is **not the PBoC’s target**. DR007 is.
+
+---
+
+## **3. PBoC OMO Rates**
+
+These are central bank repo rates:
+
+* **7-day Reverse Repo Rate**
+* **14-day Reverse Repo Rate**
+
+**They do NOT determine funding conditions directly.**
+They are the *policy signal*, not the actual funding cost.
+
+Actual liquidity comes from the **size** of the operations.
+
+---
+
+## **4. MLF Rate (Medium-Term Lending Facility)**
+
+* Sets the base for **Loan Prime Rate (LPR)**
+* Affects cost of bank credit
+* Influences property and corporate lending
+
+**MLF cut = easing signal
+MLF hold = cautious stance**
+
+---
+
+# 2️⃣ LIQUIDITY TOOLS OF THE PBoC (and what they mean)
+
+## **A. Open Market Operations (OMO) — Daily Liquidity Control**
+
+* Small but frequent injections/drains
+* Goal: keep **DR007 stable around a desired level**
+* PBoC smooths shocks (tax seasons, quarter-ends)
+
+### Trading implication:
+
+* **Large net injections** → bullish bonds, bearish CNY
+* **Large net drains** → stronger onshore liquidity, CNH/CNY support
+
+---
+
+## **B. Required Reserve Ratio (RRR) — Big Liquidity Shift**
+
+RRR cuts release **permanent base money** into the system.
+
+### Effects:
+
+* Lowers structural funding costs
+* Improves bank risk appetite
+* Supports credit growth
+
+### Trading signals:
+
+* **RRR cut → bond rally, equities up, CNY weakening (if unilateral)**
+* **RRR hold → neutral, wait for MLF or fiscal signals**
+
+RRR is the most powerful liquidity tool China has.
+
+---
+
+## **C. MLF Operations — Credit Direction**
+
+More than liquidity, MLF signals the **policy stance**:
+
+* Cut → broad-based easing
+* Hold → neutral
+* Reduce MLF size → tightening
+
+For banks, MLF determines:
+
+* loan funding costs
+* credit pricing
+* credit impulse trajectory
+
+---
+
+## **D. Window Guidance — Administrative Liquidity Steering**
+
+This is not published but extremely important.
+
+PBoC “suggests” banks:
+
+* lend more to SMEs
+* avoid lending to property developers
+* accelerate/slow mortgage approvals
+* reduce credit growth to overheated sectors
+
+This **steers credit**, even without rate cuts.
+
+### Trading impact:
+
+* Strong guidance = tighten liquidity in targeted sectors
+* Weak guidance = broader credit expansion
+
+---
+
+# 3️⃣ HOW FUNDING RATES & LIQUIDITY INTERACT (THE MECHANISM)
+
+Here is the China liquidity transmission:
+
+### **1. PBoC injects/drains liquidity → DR007 moves → influences bank funding costs → drives credit supply → moves risk assets → affects CNY.**
+
+### Flow chart:
+
+Liquidity Injection
+↓
+DR007 falls
+↓
+Banks increase lending
+↓
+Credit impulse rises
+↓
+Commodity demand rises, equities rise
+↓
+CNY softens (lower funding pressure)
+
+OR reverse:
+
+Liquidity Drain
+↓
+DR007 rises
+↓
+Banks pull back lending
+↓
+Credit slows → risk assets fall
+↓
+CNY strengthens (via CNH funding squeeze)
+
+---
+
+# 4️⃣ FUNDING RATES IMPACT ON CNY (VERY IMPORTANT)
+
+## **When China wants to defend CNH/CNY:**
+
+* They **tighten onshore liquidity** (DR007 up)
+* CNH funding costs spike (CNH HIBOR)
+* Shorting CNH becomes expensive
+* USDCNH falls
+
+This is a classic tool used during:
+
+* depreciation episodes
+* geopolitical stress
+* USD surges
+
+**Funding-based FX defense is more powerful than spot intervention.**
+
+---
+
+## **When China wants easier growth conditions:**
+
+* They reduce DR007
+* Inject liquidity
+* Ease RRR
+* Credit flows into the system
+* CNY typically weakens (unless fix offsets it)
+
+---
+
+# 5️⃣ LIQUIDITY EFFECTS ON CHINA BONDS (CGBs)
+
+CGB yields fall (rally) when:
+
+* DR007 < policy rate
+* RRR cuts
+* OMO injections
+* MLF cuts
+
+CGB yields rise when:
+
+* DR007 spikes
+* Quarter-end liquidity crunch
+* Large government issuance
+* PBoC sterilization
+
+China’s bond market is **more liquidity-driven than inflation-driven**.
+
+---
+
+# 6️⃣ LIQUIDITY EFFECTS ON EQUITIES
+
+## Bullish equity liquidity environment:
+
+* RRR cut
+* DR007 falling
+* Large OMO injections
+* Credit impulse turning positive
+* Property-sector lending stabilizing
+
+## Bearish equity liquidity environment:
+
+* DR007 spikes
+* Banks hoard liquidity (risk-off)
+* Tight seasonality (tax deadlines, quarter-end)
+* PBoC draining funds to support FX
+
+When funding tightens sharply, **A-shares sell off immediately**, regardless of fundamentals.
+
+---
+
+# 7️⃣ SEASONALITY OF LIQUIDITY IN CHINA (VERY UNIQUE)
+
+China has strong liquidity seasonality:
+
+### **Tight Periods**
+
+* Quarter-end & year-end
+* Tax payment windows (Jan, Apr, Jul, Oct)
+* Local government bond issuance peaks
+* IPO funding spikes
+
+During these:
+
+* DR007 tends to rise
+* Money-market stress
+* CNH strengthens (via onshore tightness)
+
+### **Loose Periods**
+
+* Post-tax months
+* After RRR cuts
+* Early-year credit push (Jan–Mar)
+
+---
+
+# 8️⃣ SUMMARY — THE ESSENCE YOU MUST REMEMBER
+
+### **1. DR007 is the heartbeat of China’s liquidity system.**
+
+If you want to know whether China is easing or tightening, look at DR007.
+
+### **2. CNY is defended or weakened using liquidity, not interest-rate policy.**
+
+CNH squeezes are intentional.
+
+### **3. Liquidity → funding → credit → macro cycle → CNY/rates/equities.**
+
+China's macro cycle is not inflation-driven but **credit-liquidity driven**.
+
+### **4. RRR is the strongest easing tool, but fixing is the strongest FX tool.**
+
+### **5. If DR007 drops sharply, buy:**
+
+* CGBs
+* China equities
+* Commodities (if credit follows)
+
+### **6. If DR007 spikes, buy:**
+
+* CNH
+* USDCNH downside
+* China credit hedges
+* Reduce A-share exposure
+
+---
+
+Would you like:
+
+🔹 A **diagram of the China Liquidity Transmission Mechanism**?
+🔹 A **Python-based China liquidity tracker** (DR007, MLF, OMO, credit impulse)?
+🔹 A **CNY trading playbook based on funding & liquidity regimes**?
+
