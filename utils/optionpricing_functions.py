@@ -210,10 +210,10 @@ def volcube_func(eval_date, volcube_t,linearmktdata_df, interp_obj_boolean = Tru
 def linearmktdata_interp_func(eval_date, linearmktdata_df, linearmktdata_interp_object_dict, expiry = None, time_axis_interp_method = 'cubic'):
   
     interp_obj_linearmktdata = linearmktdata_interp_object_dict['cubic'] if time_axis_interp_method == 'cubic' else linearmktdata_interp_object_dict['linear'] if time_axis_interp_method == 'linear' else None
-    std_tenors = linearmktdata_df['tenors']
-    std_expiry_dates = linearmktdata_df['expiry_date']
+    std_tenors = list(linearmktdata_df['tenors'])
+    std_expiry_dates = list(linearmktdata_df['expiry_date'])
     
-    if expiry in std_tenors.values:
+    if expiry in std_tenors:
         expiry_date = linearmktdata_df.loc[linearmktdata_df['tenors'] == expiry, 'expiry_date'].values[0]
         interp_rate1 = linearmktdata_df.loc[linearmktdata_df['tenors'] == expiry, 'rate1'].values[0]
         interp_rate2 = linearmktdata_df.loc[linearmktdata_df['tenors'] == expiry, 'rate2'].values[0]
@@ -240,19 +240,20 @@ def linearmktdata_interp_func(eval_date, linearmktdata_df, linearmktdata_interp_
             interp_forward_rate = float(interp_obj_linearmktdata['forward_rate'](value_date_nb_days))
             expiry_date_nb_days = calendar_days(eval_date, expiry_date)
     
+    Spot = linearmktdata_df.loc[linearmktdata_df['tenors'] == 'SPOT', 'forward_rate'].values[0]
     rf = interp_rate1 * 0.01
     rd = interp_rate2 * 0.01
     Ft = interp_forward_rate
     Te = expiry_date_nb_days
     Td = value_date_nb_days
 
-    return rf, rd, Ft, Te, Td
+    return Spot, Ft, rf, rd, Te, Td
 
 #######################################################################
 ## Interpolation of Smile Vol #
 #######################################################################
 
-def vol_interp_func(Ft, Strike, Te, Td, volcube_interp_object_dict, time_axis_interp_method = 'cubic'):
+def vol_interp_func(Ft, Strike, Te, Td, rf, volcube_interp_object_dict, time_axis_interp_method = 'cubic'):
     
     expirydate_nb_days = Te
 
@@ -271,23 +272,16 @@ def vol_interp_func(Ft, Strike, Te, Td, volcube_interp_object_dict, time_axis_in
         interp_twentyfive_delta_put_smilespread = volcube_interp_object_dict['tail_details']['twentyfive_delta_put_smilespreads2']
         interp_twentyfive_delta_call_smilespread = volcube_interp_object_dict['tail_details']['twentyfive_delta_call_smilespreads2']
         interp_ten_delta_call_smilespread = volcube_interp_object_dict['tail_details']['ten_delta_call_smilespreads2']
-    else:    
-        if time_axis_interp_method == 'cubic':
-            interp_atm_variance = float(volcube_interp_object_dict['cubic']['atm_variance_time'](expirydate_nb_days))**0.5
-            interp_atm_vol = math.sqrt(interp_atm_variance / expirydate_nb_days)
-            interp_ten_delta_put_smilespread = float(volcube_interp_object_dict['cubic']['10P'](expirydate_nb_days))
-            interp_twentyfive_delta_put_smilespread = float(volcube_interp_object_dict['cubic']['25P'](expirydate_nb_days))
-            interp_twentyfive_delta_call_smilespread = float(volcube_interp_object_dict['cubic']['25C'](expirydate_nb_days))
-            interp_ten_delta_call_smilespread = float(volcube_interp_object_dict['cubic']['10C'](expirydate_nb_days))
-        elif time_axis_interp_method == 'linear':
-            interp_atm_variance = float(volcube_interp_object_dict['linear']['atm_variance_time'](expirydate_nb_days))**0.5
-            interp_atm_vol = math.sqrt(interp_atm_variance / expirydate_nb_days)
-            interp_ten_delta_put_smilespread = float(volcube_interp_object_dict['linear']['10P'](expirydate_nb_days))
-            interp_twentyfive_delta_put_smilespread = float(volcube_interp_object_dict['linear']['25P'](expirydate_nb_days))
-            interp_twentyfive_delta_call_smilespread = float(volcube_interp_object_dict['linear']['25C'](expirydate_nb_days))
-            interp_ten_delta_call_smilespread = float(volcube_interp_object_dict['linear']['10C'](expirydate_nb_days))
-        else:
-            raise ValueError("No interpolation objects found in volcube_interp_object_dict")
+    else: 
+        interp_obj_volcube = volcube_interp_object_dict['cubic'] if time_axis_interp_method == 'cubic' else volcube_interp_object_dict['linear'] if time_axis_interp_method == 'linear' else None   
+        
+        interp_atm_variance = float(interp_obj_volcube['atm_variance_time'](expirydate_nb_days))
+        interp_atm_vol = math.sqrt(interp_atm_variance / expirydate_nb_days)
+        interp_ten_delta_put_smilespread = float(interp_obj_volcube['10P'](expirydate_nb_days))
+        interp_twentyfive_delta_put_smilespread = float(interp_obj_volcube['25P'](expirydate_nb_days))
+        interp_twentyfive_delta_call_smilespread = float(interp_obj_volcube['25C'](expirydate_nb_days))
+        interp_ten_delta_call_smilespread = float(interp_obj_volcube['10C'](expirydate_nb_days))
+
         
     interp_ten_delta_put_vol = interp_atm_vol + interp_ten_delta_put_smilespread
     interp_twentyfive_delta_put_vol = interp_atm_vol + interp_twentyfive_delta_put_smilespread
@@ -298,7 +292,7 @@ def vol_interp_func(Ft, Strike, Te, Td, volcube_interp_object_dict, time_axis_in
     #smilecurve[:] = [vol / 100.0 for vol in smilecurve]
     putdeltas = [.10, .25, .50, .75, .90]
 
-    sigma = smilecurve[2]
+    sigma = smilecurve[2] # sigma to start the iteration is the ATM vol
 
     cubic_spline_surface = CubicSpline(putdeltas, smilecurve)
 
@@ -306,7 +300,6 @@ def vol_interp_func(Ft, Strike, Te, Td, volcube_interp_object_dict, time_axis_in
 
     while (delta_vol > 0.001):
         
-        ''' Need to use greeks = PriceGreeksConcise '''
         analytical_delta = analytical_put_delta(Ft, Strike, Te, Td, rf, sigma)
         delta = abs(analytical_delta) # To make the put delta scale always +ve to match with the put delta list
 
@@ -324,9 +317,9 @@ def vol_interp_func(Ft, Strike, Te, Td, volcube_interp_object_dict, time_axis_in
 #######################################################################
 ## Calculation of Price & Greeks for Vanilla Options #
 #######################################################################
-# option_details = ['Currpair', 'Expiry', 'Strike', 'CallPut', 'BuySell', 'Notional_For_Ccy']
+# option_details = {'PricingDate': '2026-01-02', 'Currpair': 'EURUSD', 'Expiry': '2026-01-21', 'Strike': 1.17, 'CallPut': 'Call', 'BuySell': 'Buy', 'Notional_For_Ccy': 1000000.0}
 
-def VanillaPriceGreeks(option_details, linearmktdata_df, interp_obj_linearmktdata, volcube_interp_object_dict, interp_method = 'cubic', greeks = 'OnlyDelta'):
+def VanillaPriceGreeks(option_details, linearmktdata_df, linearmktdata_interp_object_dict, volcube_interp_object_dict, time_axis_interp_method = 'cubic'):
     
     
     PricingDate = option_details['PricingDate']
@@ -337,8 +330,8 @@ def VanillaPriceGreeks(option_details, linearmktdata_df, interp_obj_linearmktdat
     BuySell = option_details['BuySell']
     Notional_For_Ccy = option_details['Notional_For_Ccy']
     
-    Spot, Ft, rf, rd, Te, Td = linearmktdata_interp_func(linearmktdata_df, interp_obj_linearmktdata, expiry_date=Expiry, time_axis_interp_method=interp_method)
-    sigma = vol_interp_func(Ft, Strike, Te, Td, volcube_interp_object_dict, time_axis_interp_method = interp_method)
+    Spot, Ft, rf, rd, Te, Td = linearmktdata_interp_func(PricingDate, linearmktdata_df, linearmktdata_interp_object_dict, expiry=Expiry, time_axis_interp_method=time_axis_interp_method)
+    sigma = vol_interp_func(Ft, Strike, Te, Td, rf, volcube_interp_object_dict, time_axis_interp_method = time_axis_interp_method)
 
     d1, d2 = d1d2(Ft, Strike, Te, sigma)
     
@@ -493,5 +486,3 @@ def VanillaPriceGreeks(option_details, linearmktdata_df, interp_obj_linearmktdat
 #  small spot moves, but it may be less accurate for larger spot moves or when the vol surface is highly non-linear.
 def VanillaPriceSimulated (option_details, linearmktdata_df, interp_obj_linearmktdata, volcube_interp_object_dict, interp_method = 'cubic', greeks = 'OnlyDelta'):
     pass
-
-def
