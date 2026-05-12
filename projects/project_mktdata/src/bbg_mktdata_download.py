@@ -16,7 +16,9 @@ import importlib
 from datetime import datetime, timedelta, date
 from pandas.tseries.offsets import BDay
 
-from utils.bbg_functions import xbbg_hist
+from utils.bbg_functions import xbbg_bdp_value_dates, xbbg_hist
+from utils.dates_functions import *
+
 
 base_dir = os.environ.get('PROJECTS_NEW_HOME')
 sys.path.append(base_dir + '\\utils\\')
@@ -191,7 +193,7 @@ for ccy in ccys:
     df_ccy_pivot.to_csv(file_dir / f'{ccy}.csv', index=False)
 
 
-######################### #############################################
+######################### Spot Rates #############################################
 file_dir = Path(base_dir + '\\data\\bbg_mktdata\\fx_spot_fwd')
 
 start_date = '2026-01-01'
@@ -234,4 +236,86 @@ for currpair in currpairs:
 
            
 
+######################### Spot Dates #############################################
+file_dir = Path(base_dir + '\\data\\bbg_mktdata\\fx_spot_dates')
+start_date = '2026-01-01'
+end_date = '2026-04-30'
+new_cols_list = ['currpair']
+
+ref_dates = business_dates_between_two_dates(start_date, end_date)
+
+tickers_dict= {"USDINR": 'USDINR BGN Curncy',"USDKRW": 'USDKRW BGN Curncy',"USDTWD": 'USDTWD BGN Curncy',"USDIDR": 'USDIDR BGN Curncy',"USDPHP": 'USDPHP BGN Curncy',
+"USDTHB": 'USDTHB BGN Curncy',"USDCNH": 'USDCNH BGN Curncy',"USDSGD": 'USDSGD BGN Curncy',"USDHKD": 'USDHKD BGN Curncy',"EURUSD": 'EURUSD BGN Curncy',"USDJPY": 'USDJPY BGN Curncy',
+"GBPUSD": 'GBPUSD BGN Curncy',"AUDUSD": 'AUDUSD BGN Curncy',"NZDUSD": 'NZDUSD BGN Curncy',"USDCHF": 'USDCHF BGN Curncy',"USDCAD": 'USDCAD BGN Curncy', "EURAUD": 'EURAUD BGN Curncy', 
+"GBPAUD": 'GBPAUD BGN Curncy', "AUDNZD": 'AUDNZD BGN Curncy', "AUDJPY": 'AUDJPY BGN Curncy', "AUDCAD": 'AUDCAD BGN Curncy'}
+
+currpairs = list(tickers_dict.keys())
+tickers = [tickers_dict[ccy] for ccy in currpairs]
+ticker_details = {ticker: ccy for ccy, ticker in tickers_dict.items()}
+
+df_main = xbbg_bdp_value_dates(tickers, ref_dates)
+df_main = pd.concat([df_main, pd.DataFrame(columns = new_cols_list)])
+df = copy.deepcopy(df_main)
+
+if not df.empty:
+    df[new_cols_list] = pd.DataFrame(
+        [ticker_details[t] for t in df.index.get_level_values(0)],
+        index=df.index,
+        columns=new_cols_list,
+    )
+
+df.index.names = ['Ticker','Date']
+df = df.reset_index()
+
+for currpair in currpairs:
+    df_currpair = df[df['currpair'] == currpair]
+    df_currpair_pivot = pd.pivot_table(df_currpair,index=['Date'],values='value',aggfunc='first').reset_index()
+    df_currpair_pivot.set_index('Date', inplace=True)
+    df_currpair_pivot.columns = ['Spot_Date']
+    
+    print(currpair, df_currpair_pivot)
+    df_currpair_pivot.to_csv(file_dir / f'{currpair}_spot_dates.csv')
+
+           
+
+######################### Expiry Dates #############################################
+file_dir = Path(base_dir + '\\data\\bbg_mktdata\\fx_expiry_dates')
+start_date = '2026-01-01'
+end_date = '2026-04-30'
+new_cols_list = ['currpair']
+
+ref_dates = business_dates_between_two_dates(start_date, end_date)
+
+tickers_dict= {"USDINR": 'USDINR BGN Curncy',"USDKRW": 'USDKRW BGN Curncy',"USDTWD": 'USDTWD BGN Curncy',"USDIDR": 'USDIDR BGN Curncy',"USDPHP": 'USDPHP BGN Curncy',
+"USDTHB": 'USDTHB BGN Curncy',"USDCNH": 'USDCNH BGN Curncy',"USDSGD": 'USDSGD BGN Curncy',"USDHKD": 'USDHKD BGN Curncy',"EURUSD": 'EURUSD BGN Curncy',"USDJPY": 'USDJPY BGN Curncy',
+"GBPUSD": 'GBPUSD BGN Curncy',"AUDUSD": 'AUDUSD BGN Curncy',"NZDUSD": 'NZDUSD BGN Curncy',"USDCHF": 'USDCHF BGN Curncy',"USDCAD": 'USDCAD BGN Curncy', "EURAUD": 'EURAUD BGN Curncy', 
+"GBPAUD": 'GBPAUD BGN Curncy', "AUDNZD": 'AUDNZD BGN Curncy', "AUDJPY": 'AUDJPY BGN Curncy', "AUDCAD": 'AUDCAD BGN Curncy'}
+
+currpairs = list(tickers_dict.keys())
+tickers = [tickers_dict[ccy] for ccy in currpairs]
+ticker_details = {ticker: ccy for ccy, ticker in tickers_dict.items()}
+
+df_main = xbbg_bdp_option_expiry_dates(tickers, tenors_list, ref_dates)
+df_main = pd.concat([df_main, pd.DataFrame(columns = new_cols_list)])
+df = copy.deepcopy(df_main)
+
+if not df.empty:
+    df[new_cols_list] = pd.DataFrame(
+        [ticker_details[t] for t in df.index.get_level_values(0)],
+        index=df.index,
+        columns=new_cols_list,
+    )
+
+df.index.names = ['Ticker','Date','Expiry_Tenor']
+df = df.reset_index()
+
+for currpair in currpairs:
+    df_currpair = df[df['currpair'] == currpair]
+    df_currpair_pivot = pd.pivot_table(df_currpair,index=['Date'],columns='Expiry_Tenor',values='value',aggfunc='first').reset_index()
+    df_currpair_pivot.columns.name = None
+    df_currpair_pivot.set_index('Date', inplace=True)
+    df_currpair_pivot = df_currpair_pivot[tenors_list]
+
+    print(currpair, df_currpair_pivot)
+    df_currpair_pivot.to_csv(file_dir / f'{currpair}_expiry_dates.csv')
 

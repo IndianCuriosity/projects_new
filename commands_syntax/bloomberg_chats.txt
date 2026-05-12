@@ -1,0 +1,15 @@
+
+
+##################################################################################################################################################
+02:43:10 SUGAT DHARA : There is a field called SETTLE_DT
+02:43:52 SUGAT DHARA : Is there a way I can get settlement date and option expiry date for a particular tenor as of any past date
+02:45:00 BLOOMBERG HELP DESK : Checking now, one moment please
+02:49:29 BLOOMBERG HELP DESK : You can get both dates as-of any past date, but they come from different instruments, so you cannot use SGD1M Curncy for the option-expiry pull.
+Use SGD1M Curncy for the forward settlement date:
+=BDP("SGD1M Curncy", "SETTLE_DT", "REFERENCE_DATE", TEXT(A1, "YYYYMMDD"))
+
+Use the FX pair surface ticker for the option expiry date for a given tenor:
+=BDP("USDSGD BGN Curncy", "VOL_SURF_EXPIRY_OVR", "VOL_SURF_MTY_OVR=1M", "REFERENCE_DATE", TEXT(A1, "YYYYMMDD"))
+
+SGD1M Curncy is an FX forward tenor ticker, and the option-expiry workflow uses the volatility surface fields on the FX pair surface ticker, not the forward tenor ticker.
+##################################################################################################################################################
