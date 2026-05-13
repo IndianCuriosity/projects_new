@@ -13,3 +13,156 @@ Use the FX pair surface ticker for the option expiry date for a given tenor:
 
 SGD1M Curncy is an FX forward tenor ticker, and the option-expiry workflow uses the volatility surface fields on the FX pair surface ticker, not the forward tenor ticker.
 ##################################################################################################################################################
+
+ standard tenors and their rates in a single table.
+ Use:
+ =BDS("YCSW0535 Index", "CURVE_TENOR_RATES", "headers=y")
+ SUGAT DHARA
+ 00:42:33 Oh I see
+ 00:42:48 What about historical dates
+ 00:43:00 From one particular date to another one
+ BLOOMBERG HELP DESK
+ 00:43:56 Unfortunately, that can't be done. You can do it for one date, like so:
+
+ =BDS("YCSW0535 Index", "CURVE_TENOR_RATES", "CURVE_DATE=20231227", "headers=y")
+
+ But for curve-level data like CURVE_TENOR_RATES, the Excel =BDS() request only supports one CURVE_DATE per call. It cannot return a historical date range in a single formula, 
+ and you cannot use =BDH() to get a time series for the curve table.
+ SUGAT DHARA
+ 00:44:25 Any other workaround
+ BLOOMBERG HELP DESK
+ 00:44:44 To build history, list dates in Excel and pull one snapshot per date.
+
+ If your dates are in column A as Excel dates, use:
+ =BDS("YCSW0535 Index", "CURVE_TENOR_RATES", "CURVE_DATE", TEXT(A2, "YYYYMMDD"), "headers=y")
+
+ You then fill (drag) this down alongside your date list to retrieve the curve for each historical date.
+ SUGAT DHARA
+ 00:45:41 Oh I see
+ 00:45:54 11D
+ 18D
+ 1M
+ 2M
+ 3M
+ 4M
+ 5M
+ 6M
+ 9M
+ 12M
+
+ 00:46:01 These are the tenors I see
+00:46:15 Can I get 1W, 2W
+BLOOMBERG HELP DESK
+00:46:54 If =BDS("YCSW0535 Index", "CURVE_TENOR_RATES", "headers=y") returns only 11D, 18D, 1M, 2M, …, then 1W/2W/3W are not published tenor nodes on that curve, so 
+they will not appear in the CURVE_TENOR_RATES output.
+To verify the available short tenors on the Terminal, check the curve table in GC <GO> for the same curve.
+SUGAT DHARA
+00:47:49 Okay...till 12months, it's using fx forwards
+00:48:21 I checked that the fx implied yield for cnh is not the same as this number
+00:48:30 What can be the reason
+BLOOMBERG HELP DESK
+00:50:17 Even though S535 uses FX forwards for short tenors, the numbers can differ from FXFA <GO> implied yields because:
+ICVS 535 <GO> strips a curve from FX forwards and outputs curve pillar rates and discount factors. It can transform FX forwards into synthetic swap instruments during the 
+bootstrap.
+FXFA <GO> solves covered interest rate parity using the selected USD and CNH curves plus FX spot and forwards. Different curve choices will change the result. You can confirm 
+the curve IDs by clicking “USD Yield” and “CNH Yield” in FXFA.
+FXFA aligns to FX settlement conventions, calendars, and day counts, which can create differences even when the same underlying curve is referenced.
+SUGAT DHARA
+00:51:59 Actually numbers were very different
+00:52:13 Can call ?
+00:52:20 98809240
+BLOOMBERG HELP DESK
+00:52:42 Unfortunately, my line's down at the moment Sugat, but happy to continue assisting here over the chat
+SUGAT DHARA
+00:53:31 Pls check for 2019-01-25 for fx implied curve for CNH 1M
+BLOOMBERG HELP DESK
+00:53:51 Sure, will do. Will look into this and get back to you with a response via MSG <GO> as soon as possible
+SUGAT DHARA
+00:54:28 CG1M BGN Curncy
+00:55:12 Sorry that's wrong
+00:55:13 sec
+00:55:18 Wrong ticker
+BLOOMBERG HELP DESK
+00:55:32 Sure, please provide the ticker you would like me to check for
+SUGAT DHARA
+
+
+##################################################################################################################################################
+Fx Options Settings
+##################################################################################################################################################
+20:40:25 BLOOMBERG HELP DESK : Just one moment please. Redirecting you to the team to further assist this
+20:41:13 BLOOMBERG HELP DESK : Thank you for your continued support. This is Tomohiro Ishikawa from the Bloomberg Help Desk. Happy to assist you today.
+20:45:09 BLOOMBERG HELP DESK : I am currently confirming your inquiry. Please wait a moment.
+20:46:21 BLOOMBERG HELP DESK : Thank you for waiting. In Bloomberg OVDV <GO> FX volatility surfaces, the delta convention is pair-dependent and follows the surface’s contributor or market convention, which you can view in OVDV <GO> under "Settings" > "Conventions". The key items are "Delta Style" and "Delta Premium".
+For the Bloomberg BGN FX surface specifically:
+- Spot vs forward delta: "Delta Style" is spot delta for maturities below 1Y and forward delta for maturities at and beyond 1Y. Confirm the exact threshold for the pair in "Delta Style".
+* Premium-adjusted vs unadjusted: "Delta Premium" is premium-included for most currency pairs, and premium-excluded for EURUSD, GBPUSD, AUDUSD, NZDUSD, and precious metals.
+
+
+
+0:57:05 BLOOMBERG HELP DESK : Hi Sugat, thank you for your patience. I'm Lash Mohan here, your query was transferred to me. On the OVDV page, the BGN FX vol surface depends on the convention used for each currency.
+
+For example, if you're looking at EURUSD, please run EURUSD Curncy OVDV  <GO>
+
+Then click on 92) Settings in the top red bar > Convention
+
+You can find the Delta Premium > whether its included or excluded.
+
+You can find the Delta Style, Whether its Spot or Forward. For EURUSD, you will see its Spot for up to <1 Yr then for tenors beyond 1Y, its Forward Delta
+
+Sure, please let me know what other questions you have on FXO in Bloomberg
+20:58:31 SUGAT DHARA : Quick call ?
+20:58:54 SUGAT DHARA : 98809240
+20:59:20 BLOOMBERG HELP DESK : Sure thing
+21:13:10 BLOOMBERG HELP DESK : GC S92 <GO> > Click on table in the top red bar
+21:33:09 BLOOMBERG HELP DESK : TZDF <GO>
+21:35:15 BLOOMBERG HELP DESK : KRW BSYN  Curncy HP  <GO>
+
+Important thing:: to change in the settings
+
+        a) Convert everything to premium-unadjusted ( Excluded )
+        b) Make 1y also spot delta
+        c) Use BSYN for all the NDFs to get the implied spot prices
+
+
+
+22:29:29 BLOOMBERG HELP DESK : Hi Sugat, we are checking with FI team for the curve part.
+22:29:54 SUGAT DHARA : The Expiry Date and Delivery Date are not functions of tRADE dATE
+22:29:58 SUGAT DHARA : Trade Date
+22:30:53 BLOOMBERG HELP DESK : Will check on this as well. One moment
+22:52:12 BLOOMBERG HELP DESK : Previous FX team will follow up with the excel above.
+
+For zero rate curve like 92
+
+you can use the formula
+
+=@BCurve("S92","CurveDate=2025-12-31")
+but notice some of the curves are premium. You can check the full list over  XLTP XCTK <GO> >> open the excel >> profile tab >> you will see 92 is a premium one
+
+this will require extra subscription
+
+the workaround is that we can export a static number >> use FWCV <GO> and export from the screen, upper left to change the curve ID >> noting this export does not auto-refresh in Excel
+
+
+LASH MOHAN
+22:30:54 Hey Hi Sugat, I sent your query to the Fixed income team to help get the rates onto excel. I see your message on the expiry date and delivery date not being a function of trade date.
+22:31:02 Allow me to edit the file and re-send it to you
+SUGAT DHARA
+22:31:07 sure
+LASH MOHAN
+22:31:20 In the meantime the fixed income team will help to check on getting the rates to excel
+SUGAT DHARA
+22:31:26 Sure
+22:31:41 Also the expiry date has "NDF_FIXING_DATE"
+22:31:56 Will it work for deliverable pairs and cross pairs
+22:31:59 ?
+LASH MOHAN
+22:33:32 Yes the NDF_FIXING_DATE field is designed for NDFs but it works on G10s to get the T-2 date as well. For example, if we change the currency pair in the top to EURUSD, it works too.
+
+I missed out the portion on linking the dates to the trade date. I will resend you the file again
+SUGAT DHARA
+22:34:35 Okay T-2 will also take the holiday conventions as well
+22:34:38 ?
+LASH MOHAN
+22:34:52 Yes it will work around the calendar for the currency ticker we use
+SUGAT DHARA

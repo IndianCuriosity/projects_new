@@ -1,77 +1,34 @@
+import pandas as pd
 import numpy as np
-from scipy.stats import norm
+from utils.optionpricing_functions import *
+import os
+from pathlib import Path
+import pickle
 
-
-
+base_dir = os.environ.get('PROJECTS_NEW_HOME')
+mktdata_dir = Path(base_dir + '\\data\\bbg_mktdata\\')
 
 ###############################################################################################################
 # Vanilla option pricer using Garman-Kohlhagen formula for FX options. The price is in domestic currency per unit of foreign currency.
 ###############################################################################################################
 
+currpair = 'EURUSD'
+with open(mktdata_dir/'fx_pickled'/f'{currpair}_mktdata_dict.pkl', 'rb') as f:
+    currpair_mktdata_dict = pickle.load(f)
 
-def garman_kohlhagen_price(
-    spot: float,
-    strike: float,
-    tau: float,
-    rd: float,
-    rf: float,
-    vol: float,
-    option_type: str = "call",
-) -> float:
-    """
-    Garman-Kohlhagen FX option price.
+pricing_date = '2026-01-02'
+currpair_mktdata_dict_pricing_date = currpair_mktdata_dict[pricing_date]
 
-    Parameters
-    ----------
-    spot : float
-        FX spot rate, e.g. EURUSD = 1.10
-    strike : float
-        Option strike
-    tau : float
-        Time to expiry in years
-    rd : float
-        Domestic interest rate
-    rf : float
-        Foreign interest rate
-    vol : float
-        Implied volatility
-    option_type : str
-        "call" or "put"
+linearmktdata_df = currpair_mktdata_dict_pricing_date['linearmktdata_df']
+linearmktdata_interp_object_dict = currpair_mktdata_dict_pricing_date['linearmktdata_interp_object_dict']
+volcube_interp_object_dict = currpair_mktdata_dict_pricing_date['volcube_interp_object_dict']
 
-    Returns
-    -------
-    float
-        Option premium in domestic currency per unit foreign currency
-    """
+time_axis_interp_method = 'cubic'
+price_greeks_concise_boolean = True
 
-    if tau <= 0:
-        if option_type.lower() == "call":
-            return max(spot - strike, 0.0)
-        elif option_type.lower() == "put":
-            return max(strike - spot, 0.0)
-        else:
-            raise ValueError("option_type must be 'call' or 'put'")
+option_details = {'PricingDate': pricing_date, 'Currpair': currpair, 'Expiry': '2026-01-21', 'Strike': 1.17, 'CallPut': 'Call', 'BuySell': 'Buy', 'Notional_For_Ccy': 1000000.0}
 
-    d1 = (
-        np.log(spot / strike)
-        + (rd - rf + 0.5 * vol**2) * tau
-    ) / (vol * np.sqrt(tau))
-
-    d2 = d1 - vol * np.sqrt(tau)
-
-    df_domestic = np.exp(-rd * tau)
-    df_foreign = np.exp(-rf * tau)
-
-    if option_type.lower() == "call":
-        price = spot * df_foreign * norm.cdf(d1) - strike * df_domestic * norm.cdf(d2)
-
-    elif option_type.lower() == "put":
-        price = strike * df_domestic * norm.cdf(-d2) - spot * df_foreign * norm.cdf(-d1)
-
-    else:
-        raise ValueError("option_type must be 'call' or 'put'")
-
-    return price
+output = VanillaPriceGreeks(option_details, linearmktdata_df, linearmktdata_interp_object_dict, volcube_interp_object_dict, time_axis_interp_method = time_axis_interp_method, price_greeks_concise_boolean = price_greeks_concise_boolean)
 
 
 

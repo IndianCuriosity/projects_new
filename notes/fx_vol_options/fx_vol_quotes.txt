@@ -1,0 +1,13 @@
+
+
+
+| Pair   | Convention                   |
+| ------ | ---------------------------- |
+| EURUSD | Spot delta, premium-adjusted |
+| USDJPY | Spot delta, premium-adjusted |
+| GBPUSD | Spot delta, premium-adjusted |
+| AUDUSD | Often spot delta, unadjusted |
+| NZDUSD | Usually spot delta           |
+| USDCAD | Often forward delta          |
+| USDCHF | Spot delta, premium-adjusted |
+

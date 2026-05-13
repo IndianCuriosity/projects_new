@@ -44,9 +44,6 @@ currpair_spot_days_conventions = pd.read_excel(base_dir + '\\configs\\configs.xl
 curr_rate_conventions = pd.read_excel(base_dir + '\\configs\\configs.xlsx', sheet_name='CurrRateConventions', index_col=0)
 swap_factors = pd.read_excel(base_dir + '\\configs\\configs.xlsx', sheet_name='SwapFactors', index_col=0)
 
-
-
-
 mktdata_dir = Path(base_dir + '\\data\\bbg_mktdata\\')
 
 for currpair in currpairs:
@@ -69,12 +66,13 @@ for currpair in currpairs:
     vol_10p_df = vol_atm_df + vol_10b_df - 0.5 * vol_10r_df
     
     eval_dates = vol_atm_df.index
+    eval_dates = eval_dates[1:] # Removing the first date to avoid issues with missing previous day data for interpolation
     currpair_static_info_dict = {}
 
     currpair_static_info_dict['daycount_ccy1'] = curr_rate_conventions.loc[curr_1, 'DayCount']
     currpair_static_info_dict['daycount_ccy2'] = curr_rate_conventions.loc[curr_2, 'DayCount']
     currpair_static_info_dict['spot_days'] = currpair_spot_days_conventions.loc[currpair, 'SpotDays']
-    currpair_static_info_dict['currpair_rate_conventions'] = currpair_rate_conventions.loc[currpair, 'DayCount']
+    #currpair_static_info_dict['currpair_rate_conventions'] = currpair_rate_conventions.loc[currpair, 'DayCount'] # May not be required
     currpair_static_info_dict['swap_factor'] = swap_factors.loc[currpair, 'SwapFactor']
     currpair_static_info_dict['point_move'] = swap_factors.loc[currpair, 'PointMove']
     currpair_static_info_dict['tenors_calendar_days'] = tenors_calendar_days
@@ -89,26 +87,60 @@ for currpair in currpairs:
         try:
             currpair_mktdata_dict[eval_date] = {}
 
-            spot_rate = spot_df.loc[eval_date, 'Spot']
+            # spot rate
+            try:
+                spot_rate = spot_df.loc[eval_date, 'Spot']
+            except Exception as e:
+                spot_rate = spot_rate_prev
+                print(f"Spot rate missing for {currpair} on {eval_date}, using previous value: {spot_rate_prev}")
+            
             currpair_mktdata_dict[eval_date]['spot'] = spot_rate
 
             #### linearmktdata & linearmktdata_interp_object
-            yield_curr1 = curr1_yield_df.loc[eval_date]
-            yield_curr2 = curr2_yield_df.loc[eval_date]  
+            try:
+                yield_curr1 = curr1_yield_df.loc[eval_date]
+            except Exception as e:
+                yield_curr1 = yield_curr1_prev
+                print(f"Yield curve data missing for {currpair} on {eval_date}, using previous value: {yield_curr1_prev}")
+            
+            try:
+                yield_curr2 = curr2_yield_df.loc[eval_date]
+            except Exception as e:
+                yield_curr2 = yield_curr2_prev
+                print(f"Yield curve data missing for {currpair} on {eval_date}, using previous value: {yield_curr2_prev}")
+            
+            
+            if eval_date != eval_dates[0]:
+                if yield_curr1.isna().any():
+                    yield_curr1_diff_mean = (yield_curr1 - yield_curr1_prev).mean()
+                    yield_curr1_diff = yield_curr1.diff().fillna(yield_curr1_diff_mean)
+                    yield_curr1 = yield_curr1_prev + yield_curr1_diff
+
+                if yield_curr2.isna().any():
+                    yield_curr2_diff_mean = (yield_curr2 - yield_curr2_prev).mean()
+                    yield_curr2_diff = yield_curr2.diff().fillna(yield_curr2_diff_mean)
+                    yield_curr2 = yield_curr2_prev + yield_curr2_diff
+                
             linearmktdata_df, linearmktdata_interp_object_dict = linearmktdata_func(eval_date, spot_rate, yield_curr1, yield_curr2,currpair_static_info_dict,interp_obj_boolean = True, 
                                                                             time_axis_interp_method = 'both')
             currpair_mktdata_dict[eval_date]['linearmktdata_df'] = linearmktdata_df
             currpair_mktdata_dict[eval_date]['linearmktdata_interp_object_dict'] = linearmktdata_interp_object_dict
+ 
 
             #### volcube & volcube_interp_object
             volcube_t = (pd.concat([vol_10p_df.loc[eval_date], vol_25p_df.loc[eval_date], vol_atm_df.loc[eval_date], vol_25c_df.loc[eval_date], vol_10c_df.loc[eval_date]], axis=1))
             volcube_t.columns = ['10P', '25P', 'ATM', '25C', '10C']
-            volcube, volcube_interp_object_dict = volcube_func(eval_date,volcube_t,linearmktdata_df, interp_obj_boolean = True, time_axis_interp_method = 'both')
+            volcube = volcube_create_func(eval_date, volcube_t,linearmktdata_df,currpair_static_info_dict)
+            volcube_interp_object_dict = volcube_create_interp_obj_func(volcube, interp_obj_boolean = True, time_axis_interp_method = 'both')
 
             currpair_mktdata_dict[eval_date]['volcube'] = volcube
-            currpair_mktdata_dict[eval_date]['volcube_interp_object'] = volcube_interp_object_dict
+            currpair_mktdata_dict[eval_date]['volcube_interp_object_dict'] = volcube_interp_object_dict
 
-            print(f"Processed {currpair} on {eval_date}")
+            yield_curr1_prev = yield_curr1
+            yield_curr2_prev = yield_curr2
+            spot_rate_prev = spot_rate
+
+            #print(f"Processed {currpair} on {eval_date}")
         except Exception as e:
             print(f"Error processing {currpair} on {eval_date}: {e}")
             continue
