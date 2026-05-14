@@ -58,12 +58,11 @@ def business_days(refdate1, refdate2):
     # refdate1 should always be greater or equal to refdate2
     refdate1 = datetime.strptime(refdate1,'%Y-%m-%d')
     refdate2 = datetime.strptime(refdate2,'%Y-%m-%d')
-    
     if (refdate1 >= refdate2):
         return 0
     else:
         count = 0
-        while (refdate1 != refdate2):     
+        while (refdate1 < refdate2):     
             refdate1 = refdate1 + BDay(1)
             count = count + 1
         return count
@@ -77,7 +76,7 @@ def calendar_days(refdate1, refdate2):
         return 0
     else:
         count = 0
-        while (refdate1 != refdate2):     
+        while (refdate1 < refdate2):     
             refdate1 = refdate1 + timedelta(days = 1)
             count = count + 1
         return count

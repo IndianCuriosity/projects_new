@@ -27,6 +27,8 @@ from dates_functions import *
 import scipy.stats as ss
 from scipy.interpolate import CubicSpline
 from scipy.interpolate import interp1d
+from scipy.interpolate import RectBivariateSpline # Smooth interpolation of C(T,K) and derivatives
+from scipy.interpolate import RegularGridInterpolator # Monte Carlo
 from scipy.optimize import brentq
 from scipy.optimize import least_squares
 import math
@@ -217,47 +219,170 @@ def volcube_create_interp_obj_func(volcube, interp_obj_boolean = True, time_axis
 ## Calculation of SVI (Stochastic Volatility Inspired) parmeters from market data
 ############################################################################################################################################################################
 
-def svi_calibration_func(volcube, linearmktdata_df):
+def svi_calibration_func(volcube):
 
-    volcube_svi_params = copy.deepcopy(volcube)
     volcube_implied_strikes = copy.deepcopy(volcube)
+    volcube_implied_log_moneyness = copy.deepcopy(volcube)
+    
     currpair_convention_days = 365
 
-    put_delta_dict = {'10P': -0.10, '25P': -0.25, 'ATM': -0.5, '25C': -0.75, '10C': -1.0}
+    put_delta_dict = {'10P': -0.10, '25P': -0.25, 'ATM': -0.5, '25C': -0.75, '10C': -0.90}
+    delta_keys = list(put_delta_dict.keys())
+    volcube_vol = volcube[delta_keys]
+    volcube_vol_from_svi_params = copy.deepcopy(volcube_vol)
+    volcube_vol_from_svi_params[delta_keys] = np.nan
 
     tenors = list(volcube.index)
     for tenor in tenors:
-        if tenor in linearmktdata_df['tenors'].values:
-            #Te = linearmktdata_df.loc[linearmktdata_df['tenors'] == tenor, 'expiry_date_nb_days'].values[0]  / currpair_convention_days
-            #Td = linearmktdata_df.loc[linearmktdata_df['tenors'] == tenor, 'value_date_nb_days'].values[0] / currpair_convention_days
+        Te = volcube.loc[tenor,'Expiry_Days'] / currpair_convention_days
+        Td = volcube.loc[tenor,'Value_Days'] / currpair_convention_days
+        rf = volcube.loc[tenor,'Rate1'] / 100
+        Ft = volcube.loc[tenor,'Forward_Rate']
+        option_type = 'put'
+        for col, put_delta in put_delta_dict.items():
+            vol = volcube.loc[tenor, col]
+            K = strike_from_spot_delta(Ft, Te, Td, vol, rf, put_delta, option_type)
+            volcube_implied_strikes.loc[tenor, col] = K
 
-            Te = volcube.loc[tenor,'Expiry_Days'] / currpair_convention_days
-            Td = volcube.loc[tenor,'Value_Days'] / currpair_convention_days
+    volcube_implied_log_moneyness[delta_keys] = volcube_implied_strikes[delta_keys].div(volcube_implied_strikes['Forward_Rate'], axis=0)
+    volcube_implied_log_moneyness = np.log(volcube_implied_log_moneyness[delta_keys])
 
-            #rf = linearmktdata_df.loc[linearmktdata_df['tenors'] == tenor, 'rate1'].values[0] / 100
-            #Ft = linearmktdata_df.loc[linearmktdata_df['tenors'] == tenor, 'forward_rate'].values[0]
-            rf = volcube.loc[tenor,'Rate1'] / 100
-            Ft = volcube.loc[]
-            option_type = 'put'
-            for col, put_delta in put_delta_dict.items():
-                if col in volcube.columns:
-                    vol = volcube.loc[tenor, col]
-                    K = strike_from_spot_delta(Ft, Te, Td, vol, rf, put_delta, option_type)
-                    volcube_implied_strikes.loc[tenor, col] = K
+    ############ actual sv calibration per tenor #######################
+    
+    svi_params_df = pd.DataFrame(index=tenors, columns = ['a', 'b', 'rho', 'm', 'sigma'])
+    x0 = [0.05, 0.2, -0.3, 0.0, 0.1] # initial values a, b, rho, m, sigma
+    bounds = (
+        [-np.inf, 0, -0.999, -np.inf, 1e-4],
+        [ np.inf, np.inf,  0.999,  np.inf, np.inf])
+    
+    for tenor in tenors:
+        k = np.array(volcube_implied_log_moneyness.loc[tenor,:])
+        vol_mkt = np.array(volcube[delta_keys].loc[tenor,:])
 
-                    print(f"Tenor: {tenor}, Delta: {put_delta}, Implied Strike from Spot Delta: {K}")
+        res = least_squares(residuals, x0, bounds=bounds, args=(k, vol_mkt))
+        a, b, rho, m, sigma = res.x
+        svi_params_df.loc[tenor,:] = a, b, rho, m, sigma
+
+        # to check the calibration accuracy
+        # volcube_vol_from_svi_params.loc[tenor,:] = volcube_implied_log_moneyness.loc[tenor,:].apply(lambda x: svi_raw(x, a, b, rho, m, sigma))
+        # volcube_vol_diff = volcube_vol_from_svi_params - volcube_vol
+
+    return svi_params_df, volcube_implied_strikes
 
 
-    volcube.columns = ['Expiry_Date', 'Expiry_Days','-0.1', '-0.25', '-0.5', '-0.75', '-1.0']
 
-    strike_from_spot_delta(Ft, Te,Td, vol, rf, spot_delta, option_type)
+############################################################################################################################################################################
+## Local Vol Model (No Parameters)
+############################################################################################################################################################################
 
-    k = np.log(volcube_t['Strike'] / volcube_t['Forward'])
-    vol_mkt = volcube_t['Vol']
-    x0 = [0.1, 0.1, 0.0, 0.0, 0.1]  # Initial guess for [a, b, rho, m, sigma]
-    bounds = ([-np.inf, -np.inf, -1, -np.inf, 0], [np.inf, np.inf, 1, np.inf, np.inf])
+#### Building the grid of maturities and surface over which the call prices and local vol will be calculated
+def build_maturities_strikes(eval_date, volcube_implied_strikes, linearmktdata_df,linearmktdata_interp_object_dict,linearmktdata_time_axis_interp_method='linear'):
+    nb_steps = 20
+
+    strikes = sorted((volcube_implied_strikes[['10P','25P','ATM','25C','10C']]).values.flatten())
+    strikes = [float(round(x,4)) for x in strikes]
+
+    std_expiry_dates = list(volcube_implied_strikes['Expiry_Date'])
+    expiry_date1, expiry_date2 = std_expiry_dates[0], std_expiry_dates[-1]
+
+    expiry_dates = business_dates_between_two_dates(expiry_date1,expiry_date2)
+    indices = np.linspace(0, len(expiry_dates) - 1, nb_steps, dtype=int)
+    
+    expiry_dates_equally_spaced = [expiry_dates[i] for i in indices] # try to be equally spaced business days
+
+    interp_data_df = linearmktdata_interp_expiry_list_func(eval_date, linearmktdata_df, linearmktdata_interp_object_dict, expiry_list = expiry_dates_equally_spaced, linearmktdata_time_axis_interp_method=linearmktdata_time_axis_interp_method)
+
+    return interp_data_df, strikes
 
 
+####### Building the 2 dimensional call price surface ########
+def build_call_surface(interp_data_df, strikes, option_details_dict, currpair_mktdata_dict_pricing_date, smile_vol_model ='std_cubic_interp_vol_model', 
+                       volmktdata_time_axis_interp_method = 'linear', price_greeks_concise_boolean = True):
+    """
+    Build call price surface C(K,T) from implied vol surface.
+
+    vol_surface shape: len(expiry_dates) x len(strikes)
+    """
+    option_details_dict['CallPut'] = 'Call' # should always be Call
+    expiry_dates = interp_data_df['De']
+    call_prices_surface = np.zeros((len(expiry_dates),len(strikes)))
+    count = 0
+    for i, expiry_date in enumerate(expiry_dates):
+        for j, Strike in enumerate(strikes):
+            option_details_dict['Strike'] = Strike
+            option_details_dict['Expiry'] = expiry_date
+
+            Spot, Ft, rf, rd, Te, Td, De, Dd, Ds = interp_data_df.loc[expiry_date,:]
+
+            mktdata_details_dict = {'Spot':Spot, 'Ft':Ft, 'rf':rf, 'rd':rd, 'Te':Te, 'Td':Td, 'De':De, 'Dd':Dd, 'Ds':Ds,'sigma': None, 'sigma_ATM': None}
+            sigma, sigma_ATM = smile_vol_func(option_details_dict, mktdata_details_dict, currpair_mktdata_dict_pricing_date,smile_vol_model,volmktdata_time_axis_interp_method)
+
+            mktdata_details_dict['sigma'] = sigma
+            mktdata_details_dict['sigma_ATM'] = sigma_ATM
+
+            output = VanillaPriceGreeks_BS(option_details_dict, mktdata_details_dict,price_greeks_concise_boolean)
+            
+            call_prices_surface[i, j] = output.loc['Premium_2ndCcy_pips','Value'] # will be used in dC/dK, need to be same units
+            count = count + 1
+            print (count)
+    return call_prices_surface
+
+
+##### Building the 2 dimensional local vol surface #####
+def dupire_local_vol_func(interp_data_df, strikes, option_details_dict, currpair_mktdata_dict_pricing_date, smile_vol_model ='std_cubic_interp_vol_model', 
+                       volmktdata_time_axis_interp_method = 'linear', price_greeks_concise_boolean = True):
+    """
+    Computes Dupire local volatility surface.
+
+    Dupire FX formula:
+
+    sigma_loc^2(K,T) =
+        [dC/dT + (rd-rf) K dC/dK + rf C]
+        /
+        [0.5 K^2 d2C/dK2]
+    """
+    expiry_days = list(interp_data_df['Te'])
+ 
+    expiry_years_array = np.asarray(expiry_days)/365
+    strikes_array = np.asarray(strikes)
+    expiry_dates = list(interp_data_df['De'])
+
+    call_surface = build_call_surface(interp_data_df, strikes, option_details_dict, currpair_mktdata_dict_pricing_date, smile_vol_model =smile_vol_model, 
+                                      volmktdata_time_axis_interp_method = volmktdata_time_axis_interp_method, price_greeks_concise_boolean = price_greeks_concise_boolean)
+
+    # Smooth interpolation of C(T,K)
+    spline = RectBivariateSpline(
+        expiry_years_array,
+        strikes_array,
+        call_surface,
+        kx=3,
+        ky=3
+    )
+
+    local_vol_surface = np.zeros_like(call_surface)
+
+    for i, (Te_years, expiry_date) in enumerate(zip(expiry_years_array, expiry_dates)):
+        for j, K in enumerate(strikes_array):
+            print (i,j,Te_years, expiry_date,K)
+
+            Spot, Ft, rf, rd, Te, Td, De, Dd, Ds = interp_data_df.loc[expiry_date,:]
+
+            C = spline(Te_years, K, dx=0, dy=0)[0, 0]
+            dC_dT = spline(Te_years, K, dx=1, dy=0)[0, 0]
+            dC_dK = spline(Te_years, K, dx=0, dy=1)[0, 0]
+            d2C_dK2 = spline(Te_years, K, dx=0, dy=2)[0, 0]
+
+            numerator = dC_dT + (rd - rf) * K * dC_dK + rf * C
+            denominator = 0.5 * K**2 * d2C_dK2
+
+            local_var = numerator / denominator
+
+            if local_var > 0 and np.isfinite(local_var):
+                local_vol_surface[i, j] = np.sqrt(local_var)
+            else:
+                local_vol_surface[i, j] = np.nan
+
+    return local_vol_surface, expiry_years_array,strikes_array
 
 
 
@@ -314,7 +439,6 @@ def strike_from_spot_delta(Ft, Te,Td, vol, rf, spot_delta, option_type):
         d1 = -ss.norm.ppf(-spot_delta / df_f)
     else:
         raise ValueError("option_type must be 'call' or 'put'")
-    d1 = d1[0]
 
     K = Ft * np.exp(-d1 * vol * np.sqrt(Te) + 0.5 * vol**2 * Te)
     return K
@@ -367,9 +491,9 @@ def strike_from_premium_adjusted_forward_delta(Ft, Te, vol, delta, option_type):
 ############################################################################################################################################################################
 ## Interpolation of Linear Market Data #
 ############################################################################################################################################################################
-def linearmktdata_interp_func(eval_date, linearmktdata_df, linearmktdata_interp_object_dict, expiry = None, time_axis_interp_method = 'cubic'):
+def linearmktdata_interp_func(eval_date, linearmktdata_df, linearmktdata_interp_object_dict, expiry = None, linearmktdata_time_axis_interp_method = 'cubic'):
   
-    interp_obj_linearmktdata = linearmktdata_interp_object_dict['cubic'] if time_axis_interp_method == 'cubic' else linearmktdata_interp_object_dict['linear'] if time_axis_interp_method == 'linear' else None
+    interp_obj_linearmktdata = linearmktdata_interp_object_dict['cubic'] if linearmktdata_time_axis_interp_method == 'cubic' else linearmktdata_interp_object_dict['linear'] if linearmktdata_time_axis_interp_method == 'linear' else None
     std_tenors = list(linearmktdata_df['tenors'])
     std_expiry_dates = list(linearmktdata_df['expiry_date'])
     spot_date = linearmktdata_df.loc[linearmktdata_df['tenors'] == 'SPOT', 'value_date'].values[0]
@@ -413,11 +537,92 @@ def linearmktdata_interp_func(eval_date, linearmktdata_df, linearmktdata_interp_
 
     return Spot, Ft, rf, rd, Te, Td, De, Dd, Ds
 
+def linearmktdata_interp_expiry_list_func(eval_date, linearmktdata_df, linearmktdata_interp_object_dict, expiry_list = None, linearmktdata_time_axis_interp_method = 'cubic'):
+  
+    interp_obj_linearmktdata = linearmktdata_interp_object_dict['cubic'] if linearmktdata_time_axis_interp_method == 'cubic' else linearmktdata_interp_object_dict['linear'] if linearmktdata_time_axis_interp_method == 'linear' else None
+    std_tenors = list(linearmktdata_df['tenors'])
+    std_expiry_dates = list(linearmktdata_df['expiry_date'])
+    spot_date = linearmktdata_df.loc[linearmktdata_df['tenors'] == 'SPOT', 'value_date'].values[0]
+    Spot = linearmktdata_df.loc[linearmktdata_df['tenors'] == 'SPOT', 'forward_rate'].values[0]
+    
+    interp_data_df = pd.DataFrame(index = expiry_list, columns = ['Spot', 'Ft', 'rf', 'rd', 'Te', 'Td', 'De', 'Dd', 'Ds'])
+
+    for expiry in expiry_list:
+            
+        if expiry in std_tenors: # expiry in format '1M", "3M"
+            expiry_date = linearmktdata_df.loc[linearmktdata_df['tenors'] == expiry, 'expiry_date'].values[0]
+            value_date = linearmktdata_df.loc[linearmktdata_df['tenors'] == expiry, 'value_date'].values[0]
+            expiry_date_nb_days = linearmktdata_df.loc[linearmktdata_df['tenors'] == expiry, 'expiry_date_nb_days'].values[0]                                                                                                                                                                                   
+            value_date_nb_days = linearmktdata_df.loc[linearmktdata_df['tenors'] == expiry, 'value_date_nb_days'].values[0]
+            
+            interp_rate1 = linearmktdata_df.loc[linearmktdata_df['tenors'] == expiry, 'rate1'].values[0]
+            interp_rate2 = linearmktdata_df.loc[linearmktdata_df['tenors'] == expiry, 'rate2'].values[0]
+            interp_forward_rate = linearmktdata_df.loc[linearmktdata_df['tenors'] == expiry, 'forward_rate'].values[0]
+            
+            #return interp_rate1, interp_rate2, interp_forward_rate
+        
+        elif expiry in std_expiry_dates: # expiry in format '2016-01-02'
+            expiry_date = expiry
+            value_date = linearmktdata_df.loc[linearmktdata_df['expiry_date'] == expiry, 'value_date'].values[0]
+            expiry_date_nb_days = linearmktdata_df.loc[linearmktdata_df['expiry_date'] == expiry, 'expiry_date_nb_days'].values[0]
+            value_date_nb_days = linearmktdata_df.loc[linearmktdata_df['expiry_date'] == expiry, 'value_date_nb_days'].values[0]
+            
+            interp_rate1 = linearmktdata_df.loc[linearmktdata_df['expiry_date'] == expiry, 'rate1'].values[0]
+            interp_rate2 = linearmktdata_df.loc[linearmktdata_df['expiry_date'] == expiry, 'rate2'].values[0]
+            interp_forward_rate = linearmktdata_df.loc[linearmktdata_df['expiry_date'] == expiry, 'forward_rate'].values[0]
+
+            #return interp_rate1, interp_rate2, interp_forward_rate
+        else:
+            if len(expiry) == 10: # 2026-01-01 format
+                expiry_date = expiry
+                value_date = next_bus_day_ref(expiry_date, 2)
+                value_date_nb_days = calendar_days(eval_date, value_date)
+                interp_rate1 = float(interp_obj_linearmktdata['rate1'](value_date_nb_days))
+                interp_rate2 = float(interp_obj_linearmktdata['rate2'](value_date_nb_days))
+                interp_forward_rate = float(interp_obj_linearmktdata['forward_rate'](value_date_nb_days))
+                expiry_date_nb_days = calendar_days(eval_date, expiry_date)
+        
+        interp_data_df.loc[expiry,:] = [Spot,interp_forward_rate,interp_rate1 * 0.01,interp_rate2 * 0.01,expiry_date_nb_days,value_date_nb_days,expiry_date,value_date,spot_date]
+    
+    return interp_data_df
+
 ############################################################################################################################################################################
-## Interpolation of Smile Vol #
+## SVI Calibration Functions # ( Not used in the current version of the code, but can be used for future extension to SVI implied volatility surface construction and interpolation)
+
+
+# | Parameter | Meaning          | Trading intuition             |
+# | --------- | ---------------- | ----------------------------- |
+# | **a**     | Vertical level   | Overall variance level        |
+# | **b**     | Slope / scale    | Strength of smile             |
+# | **ρ**     | Skew (-1 to +1)  | Left/right skew (RR)          |
+# | **m**     | Horizontal shift | Smile center (where ATM sits) |
+# | **σ**     | Curvature        | How “fat” the wings are       |
+
+# | k ::  ln(K/F) or (K /F - 1): log-moneyness or strike moneyness
+
+# example d
+# k = np.array([-0.2, -0.1, 0.0, 0.1, 0.2]) # ln(K/F) or (K /F - 1): log-moneyness or strike moneyness
+# vol_mkt = np.array([0.09, 0.07, 0.06, 0.065, 0.08])
+# x0 = [0.05, 0.2, -0.3, 0.0, 0.1]
+# bounds = ([-np.inf, 0, -0.999, -np.inf, 1e-4],[ np.inf, np.inf,  0.999,  np.inf, np.inf])
+
+# res = least_squares(residuals, x0, bounds=bounds, args=(k, vol_mkt))
+# params = res.x
+# a, b, rho, m, sigma = res.x 
 ############################################################################################################################################################################
 
-def vol_interp_func(Ft, Strike, Te, Td, rf, volcube_interp_object_dict, time_axis_interp_method = 'cubic'):
+def svi_raw(k, a, b, rho, m, sigma):
+    return a + b * (rho * (k - m) + np.sqrt((k - m)**2 + sigma**2))
+
+def residuals(params, k, vol_mkt):
+    return svi_raw(k, *params) - vol_mkt
+
+
+############################################################################################################################################################################
+## Interpolation of Smile Vol using Standard Cubic Interpolation Method
+############################################################################################################################################################################
+
+def std_cubic_interp_vol_model_func(Ft, Strike, Te, Td, rf, volcube_interp_object_dict, volmktdata_time_axis_interp_method = 'linear'):
     
     expirydate_nb_days = Te
 
@@ -437,7 +642,7 @@ def vol_interp_func(Ft, Strike, Te, Td, rf, volcube_interp_object_dict, time_axi
         interp_twentyfive_delta_call_smilespread = volcube_interp_object_dict['tail_details']['twentyfive_delta_call_smilespreads2']
         interp_ten_delta_call_smilespread = volcube_interp_object_dict['tail_details']['ten_delta_call_smilespreads2']
     else: 
-        interp_obj_volcube = volcube_interp_object_dict['cubic'] if time_axis_interp_method == 'cubic' else volcube_interp_object_dict['linear'] if time_axis_interp_method == 'linear' else None   
+        interp_obj_volcube = volcube_interp_object_dict['cubic'] if volmktdata_time_axis_interp_method == 'cubic' else volcube_interp_object_dict['linear'] if volmktdata_time_axis_interp_method == 'linear' else None   
         
         interp_atm_variance = float(interp_obj_volcube['atm_variance_time'](expirydate_nb_days))
         interp_atm_vol = math.sqrt(interp_atm_variance / expirydate_nb_days)
@@ -478,60 +683,104 @@ def vol_interp_func(Ft, Strike, Te, Td, rf, volcube_interp_object_dict, time_axi
     
     return sigma, sigma_ATM
 
+
 ############################################################################################################################################################################
-## SVI Calibration Function # ( Not used in the current version of the code, but can be used for future extension to SVI implied volatility surface construction and interpolation)
+## Interpolation of Smile Vol using SVI Parameters
 ############################################################################################################################################################################
 
-# | Parameter | Meaning          | Trading intuition             |
-# | --------- | ---------------- | ----------------------------- |
-# | **a**     | Vertical level   | Overall variance level        |
-# | **b**     | Slope / scale    | Strength of smile             |
-# | **ρ**     | Skew (-1 to +1)  | Left/right skew (RR)          |
-# | **m**     | Horizontal shift | Smile center (where ATM sits) |
-# | **σ**     | Curvature        | How “fat” the wings are       |
+def svi_vol_model_func(Ft, Strike, Te, volcube, svi_params_df):
+    # vol_log_moneyness_ladder = (np.log(Strike / volcube['Forward_Rate'])).to_frame()
+    # interp_vol_ladder = copy.deepcopy(vol_log_moneyness_ladder)
+    # interp_vol_ladder.columns = ['Smile_Vol']
+    
+    vol_log_moneyness = np.log(Strike / Ft)
+    interp_vol_ladder = copy.deepcopy(volcube[['ATM','Expiry_Days']])
+    interp_vol_ladder[['Smile','Smile_TimeVariance','ATM_TimeVariance']] = ''
+    interp_vol_ladder = interp_vol_ladder[['Smile','ATM','Expiry_Days','Smile_TimeVariance','ATM_TimeVariance']]
 
-# | k ::  ln(K/F) or (K /F - 1): log-moneyness or strike moneyness
+    tenors = list(interp_vol_ladder.index)
 
-def svi_raw(k, a, b, rho, m, sigma):
-    return a + b * (rho * (k - m) + np.sqrt((k - m)**2 + sigma**2))
+    for tenor in tenors:
+        a, b, rho, m, sigma = svi_params_df.loc[tenor,:]
+        #interp_vol_ladder.loc[tenor] = svi_raw(vol_log_moneyness_ladder.loc[tenor,'Forward_Rate'], a, b, rho, m, sigma)
+        interp_vol_ladder.loc[tenor,'Smile'] = svi_raw(vol_log_moneyness, a, b, rho, m, sigma)
+        
+    interp_vol_ladder['Smile_TimeVariance'] = interp_vol_ladder['Smile'] * interp_vol_ladder['Smile'] * interp_vol_ladder['Expiry_Days']
+    interp_vol_ladder['ATM_TimeVariance'] = interp_vol_ladder['ATM'] * interp_vol_ladder['ATM'] * interp_vol_ladder['Expiry_Days']
+    
+    nb_expiry_days = np.array(interp_vol_ladder['Expiry_Days'])
+    smile_time_variance = np.array(interp_vol_ladder['Smile_TimeVariance'])
+    atm_time_variance = np.array(interp_vol_ladder['ATM_TimeVariance'])
+    
+    interp_object_smile_time_variance = interp1d(nb_expiry_days, smile_time_variance, fill_value='extrapolate')
+    interp_object_atm_time_variance = interp1d(nb_expiry_days, atm_time_variance, fill_value='extrapolate')
 
-def residuals(params, k, vol_mkt):
-    return svi_raw(k, *params) - vol_mkt
+    sigma = np.sqrt(interp_object_smile_time_variance(Te)/Te)
+    sigma_ATM = np.sqrt(interp_object_atm_time_variance(Te)/Te)
+  
+    return sigma, sigma_ATM
 
-# example data
-'''
-k = np.array([-0.2, -0.1, 0.0, 0.1, 0.2]) # ln(K/F) or (K /F - 1): log-moneyness or strike moneyness
-vol_mkt = np.array([0.09, 0.07, 0.06, 0.065, 0.08])
+def smile_vol_func(option_details_dict, mktdata_details_dict, currpair_mktdata_dict_pricing_date,smile_vol_model = 'std_cubic_interp_vol_model',volmktdata_time_axis_interp_method = 'linear'):
+    Strike = option_details_dict['Strike']
+    Ft = mktdata_details_dict['Ft']
+    Te = mktdata_details_dict['Te']
+    Td = mktdata_details_dict['Td']
+    rf = mktdata_details_dict['rf']
+    
+    if smile_vol_model == 'std_cubic_interp_vol_model':
+        volcube_interp_object_dict = currpair_mktdata_dict_pricing_date['volcube_interp_object_dict']
+        volmktdata_time_axis_interp_method = volmktdata_time_axis_interp_method
+        sigma, sigma_ATM = std_cubic_interp_vol_model_func(Ft, Strike, Te, Td, rf, volcube_interp_object_dict, volmktdata_time_axis_interp_method = volmktdata_time_axis_interp_method)
 
-x0 = [0.05, 0.2, -0.3, 0.0, 0.1]
+    elif smile_vol_model == 'svi_vol_model':
+        svi_params_df = currpair_mktdata_dict_pricing_date['svi_params_df']
+        volcube = currpair_mktdata_dict_pricing_date['volcube']
+        sigma, sigma_ATM = svi_vol_model_func(Ft, Strike, Te, volcube, svi_params_df)
+    
+    return sigma, sigma_ATM
 
-bounds = (
-    [-np.inf, 0, -0.999, -np.inf, 1e-4],
-    [ np.inf, np.inf,  0.999,  np.inf, np.inf]
-)
-res = least_squares(residuals, x0, bounds=bounds, args=(k, vol_mkt))
-params = res.x
+# def mktdata_details_func(currpair_mktdata_dict_pricing_date):
 
-'''
+#     linearmktdata_df = currpair_mktdata_dict_pricing_date['linearmktdata_df']
+#     linearmktdata_interp_object_dict = currpair_mktdata_dict_pricing_date['linearmktdata_interp_object_dict']
+#     volcube_interp_object_dict = currpair_mktdata_dict_pricing_date['volcube_interp_object_dict']
+#     volcube = currpair_mktdata_dict_pricing_date['volcube']
+#     svi_params_df = currpair_mktdata_dict_pricing_date['svi_params_df']
 
+#     linearmktdata_time_axis_interp_method = 'linear'
+    
 
+#     volmktdata_time_axis_interp_method = 'linear'
+#     smile_vol_model = 'svi_vol_model' # 'svi_vol_model, 'std_cubic_interp_vol_model'
+#     #smile_vol_model = 'std_cubic_interp_vol_model'
 
+#     vol_details_dict = {}
+#     if smile_vol_model == 'std_cubic_interp_vol_model':
+#         vol_details_dict['volcube_interp_object_dict'] = volcube_interp_object_dict
+#         vol_details_dict['volmktdata_time_axis_interp_method'] = volmktdata_time_axis_interp_method
+#     elif smile_vol_model == 'svi_vol_model':
+#         vol_details_dict['volcube'] = volcube
+#         vol_details_dict['svi_params_df'] = svi_params_df
+
+#     return mktdata_details_dict
 
 ############################################################################################################################################################################    
-## Calculation of Price & Greeks for Vanilla Options #
-#######################################################################
-# option_details = {'PricingDate': '2026-01-02', 'Currpair': 'EURUSD', 'Expiry': '2026-01-21', 'Strike': 1.17, 'CallPut': 'Call', 'BuySell': 'Buy', 'Notional_For_Ccy': 1000000.0}
+## Calculation of Price & Greeks for Vanilla Options ( Closed form Black Scholes)
+############################################################################################################################################################################
 
-def VanillaPriceGreeks(option_details, linearmktdata_df, linearmktdata_interp_object_dict, volcube_interp_object_dict, time_axis_interp_method = 'cubic', price_greeks_concise_boolean = True):
+# option_details_dict = {'Eval_Date': '2026-01-02', 'Currpair': 'EURUSD', 'Expiry': '2026-01-21', 'Strike': 1.17, 'CallPut': 'Call', 'BuySell': 'Buy', 'Notional_For_Ccy': 1000000.0}
+
+#def VanillaPriceGreeks_BS(option_details_dict, linearmktdata_df, linearmktdata_interp_object_dict, vol_details_dict, smile_vol_model, price_greeks_concise_boolean = True, linearmktdata_time_axis_interp_method='linear'):
     
-    
-    PricingDate = option_details['PricingDate']
-    Currpair = option_details['Currpair']
-    Expiry = option_details['Expiry']
-    Strike = option_details['Strike']
-    CallPut = option_details['CallPut']
-    BuySell = option_details['BuySell']
-    Notional_For_Ccy = option_details['Notional_For_Ccy']
+def VanillaPriceGreeks_BS(option_details_dict, mktdata_details_dict,price_greeks_concise_boolean = True):
+
+    EvalDate = option_details_dict['Eval_Date']
+    Currpair = option_details_dict['Currpair']
+    Expiry = option_details_dict['Expiry']
+    Strike = option_details_dict['Strike']
+    CallPut = option_details_dict['CallPut']
+    BuySell = option_details_dict['BuySell']
+    Notional_For_Ccy = option_details_dict['Notional_For_Ccy']
     currpair_convention_days = 365
 
     if (BuySell == 'Sell'): 
@@ -539,12 +788,12 @@ def VanillaPriceGreeks(option_details, linearmktdata_df, linearmktdata_interp_ob
     elif (BuySell == 'Buy'):
         BuySell_multiplier = 1.0
     
-    Spot, Ft, rf, rd, Te, Td, De, Dd, Ds = linearmktdata_interp_func(PricingDate, linearmktdata_df, linearmktdata_interp_object_dict, expiry=Expiry, time_axis_interp_method=time_axis_interp_method)
-    sigma, sigma_ATM = vol_interp_func(Ft, Strike, Te, Td, rf, volcube_interp_object_dict, time_axis_interp_method = time_axis_interp_method)
+    Spot, Ft, Te, Td,rf, rd = mktdata_details_dict['Spot'], mktdata_details_dict['Ft'], mktdata_details_dict['Te'], mktdata_details_dict['Td'], mktdata_details_dict['rf'],mktdata_details_dict['rd']
+    Ds, De, Dd, sigma, sigma_ATM = mktdata_details_dict['Ds'], mktdata_details_dict['De'], mktdata_details_dict['Dd'], mktdata_details_dict['sigma'], mktdata_details_dict['sigma_ATM']
 
+    # converting days to yearly fractional for black scholes input
     Te = Te / currpair_convention_days
     Td = Td / currpair_convention_days
-
 
     d1, d2 = d1d2(Ft, Strike, Te, sigma)
     
@@ -627,7 +876,7 @@ def VanillaPriceGreeks(option_details, linearmktdata_df, linearmktdata_interp_ob
     
     output.loc['CcyPair'] = Currpair
     output.loc['BuySell'] = BuySell
-    output.loc['Horizon Date'] = PricingDate
+    output.loc['Horizon Date'] = EvalDate
     output.loc['Spot Date'] = Ds
     output.loc['CallPut'] = CallPut
     output.loc['Maturity'] = De
@@ -698,6 +947,110 @@ def VanillaPriceGreeks(option_details, linearmktdata_df, linearmktdata_interp_ob
         output.loc['analytical_vega_1stCcy_amount'] = "{:,}".format(int(analytical_vega_for_amount))
         
     return output
+
+
+
+
+
+
+############################################################################################################################################################################    
+## Calculation of Price & Greeks for Vanilla Options (Monte Carlo ) using local volatility model
+############################################################################################################################################################################
+
+# Prices still not matching  #########
+def VanillaPriceGreeks_MC_Local_Vol(option_details_dict, mktdata_details_dict, local_vol_surface,expiry_years_array, strikes_array,n_paths=100_000,n_steps=252,seed=42):
+
+    """
+    European option pricing using Monte Carlo under local volatility.
+
+    local_vol_surface shape:
+        len(maturities) x len(strikes)
+
+    maturities:
+        grid of times in years, e.g. [0.25, 0.5, 1.0, 2.0]
+
+    strikes:
+        grid of spot/strike levels, e.g. [0.90, 1.00, 1.10, 1.20]
+
+    local_vol_surface:
+        Dupire local vol surface sigma_loc(T, S)
+    """
+
+
+    EvalDate = option_details_dict['Eval_Date']
+    Currpair = option_details_dict['Currpair']
+    Expiry = option_details_dict['Expiry']
+    Strike = option_details_dict['Strike']
+    CallPut = option_details_dict['CallPut']
+    BuySell = option_details_dict['BuySell']
+    Notional_For_Ccy = option_details_dict['Notional_For_Ccy']
+    currpair_convention_days = 365
+
+    if (BuySell == 'Sell'): 
+        BuySell_multiplier = -1.0
+    elif (BuySell == 'Buy'):
+        BuySell_multiplier = 1.0
+    
+    Spot, Ft, Te, Td,rf, rd = mktdata_details_dict['Spot'], mktdata_details_dict['Ft'], mktdata_details_dict['Te'], mktdata_details_dict['Td'], mktdata_details_dict['rf'],mktdata_details_dict['rd']
+    Ds, De, Dd, sigma_bs_implied, sigma_ATM = mktdata_details_dict['Ds'], mktdata_details_dict['De'], mktdata_details_dict['Dd'], mktdata_details_dict['sigma'], mktdata_details_dict['sigma_ATM']
+    
+    Te = Te / currpair_convention_days
+    Td = Td / currpair_convention_days
+ 
+    rng = np.random.default_rng(seed)
+
+    # maturities = np.asarray(maturities)
+    # strikes = np.asarray(strikes)
+    # local_vol_surface = np.asarray(local_vol_surface)
+
+    # Interpolator expects points as (time, spot)
+    lv_interp = RegularGridInterpolator(
+        points=(expiry_years_array, strikes_array),
+        values=local_vol_surface,
+        bounds_error=False,
+        fill_value=None
+    )
+
+    dt = Te / n_steps
+    sqrt_dt = np.sqrt(dt)
+
+    S = np.full(n_paths, Spot, dtype=float)
+
+    for step in range(n_steps):
+        t = min((step + 1) * dt, expiry_years_array[-1])
+
+        query_points = np.column_stack([np.full(n_paths, t), S])
+        sigma = lv_interp(query_points)
+
+        # Basic safety cleaning
+        sigma = np.where(np.isfinite(sigma), sigma, 0.0)
+        sigma = np.maximum(sigma, 1e-6)
+
+        Z = rng.standard_normal(n_paths)
+
+        # Log-Euler scheme
+        S *= np.exp((rd - rf - 0.5 * sigma**2) * dt + sigma * sqrt_dt * Z)
+    print('Completed Step: ', step)
+
+    if CallPut == "Call":
+        payoff = np.maximum(S - Strike, 0.0)
+    elif CallPut == "Put":
+        payoff = np.maximum(Strike - S, 0.0)
+    else:
+        raise ValueError("option_type must be 'call' or 'put'")
+
+    price = np.exp(-rd * Td) * np.mean(payoff)
+    #stderr = np.exp(-rd * Td) * np.std(payoff) / np.sqrt(n_paths)
+
+    return price, stderr
+
+
+
+
+
+
+
+
 
 
 # Price derived from spot move, delta, and vega, without re-interpolating the vol cube for each spot move iteration. This is a faster method to get an approximate price and delta for

@@ -12,16 +12,22 @@ import json
 import sys
 import importlib
 import pickle
+import importlib
 
 from datetime import datetime, timedelta, date
 from pandas.tseries.offsets import BDay
 
-from utils.bbg_functions import xbbg_hist
-from utils.optionpricing_functions import *
-
 base_dir = os.environ.get('PROJECTS_NEW_HOME')
 sys.path.append(base_dir + '\\utils\\')
 sys.path.append(base_dir + '\\configs\\')
+
+
+from utils.bbg_functions import xbbg_hist
+if "utils.optionpricing_functions" in sys.modules:
+    del sys.modules["utils.optionpricing_functions"]
+
+from utils.optionpricing_functions import *
+# importlib.reload(opt_funcs) 
 
 
 config = configparser.ConfigParser()
@@ -120,27 +126,51 @@ for currpair in currpairs:
                     yield_curr2_diff_mean = (yield_curr2 - yield_curr2_prev).mean()
                     yield_curr2_diff = yield_curr2.diff().fillna(yield_curr2_diff_mean)
                     yield_curr2 = yield_curr2_prev + yield_curr2_diff
-                
-            linearmktdata_df, linearmktdata_interp_object_dict = linearmktdata_func(eval_date, spot_rate, yield_curr1, yield_curr2,currpair_static_info_dict,interp_obj_boolean = True, 
+            
+            try:
+                linearmktdata_df, linearmktdata_interp_object_dict = linearmktdata_func(eval_date, spot_rate, yield_curr1, yield_curr2,currpair_static_info_dict,interp_obj_boolean = True, 
                                                                             time_axis_interp_method = 'both')
+            except Exception as e:
+                 print ('Error in generating linearmktdata_df, linearmktdata_interp_object_dict: ', e)
+                 linearmktdata_df, linearmktdata_interp_object_dict =  None, None
+
             currpair_mktdata_dict[eval_date]['linearmktdata_df'] = linearmktdata_df
             currpair_mktdata_dict[eval_date]['linearmktdata_interp_object_dict'] = linearmktdata_interp_object_dict
  
 
-            #### volcube & volcube_interp_object
+            #### volcube & volcube_interp_object ######################
+
             volcube_t = (pd.concat([vol_10p_df.loc[eval_date], vol_25p_df.loc[eval_date], vol_atm_df.loc[eval_date], vol_25c_df.loc[eval_date], vol_10c_df.loc[eval_date]], axis=1))
             volcube_t.columns = ['10P', '25P', 'ATM', '25C', '10C']
-            volcube = volcube_create_func(eval_date, volcube_t,linearmktdata_df,currpair_static_info_dict)
-            volcube_interp_object_dict = volcube_create_interp_obj_func(volcube, interp_obj_boolean = True, time_axis_interp_method = 'both')
+            
+            try:
+                volcube = volcube_create_func(eval_date, volcube_t,linearmktdata_df,currpair_static_info_dict)
+            except Exception as e:
+                print ('Error in generating volcube: ', e)
+                volcube = None
+            try:
+                volcube_interp_object_dict = volcube_create_interp_obj_func(volcube, interp_obj_boolean = True, time_axis_interp_method = 'both')
+            except Exception as e:
+                print ('Error in generating volcube_interp_object_dict: ', e)
+                volcube_interp_object_dict = None
+            
+            try:
+                svi_params_df,volcube_implied_strikes = svi_calibration_func(volcube)
+            except Exception as e:
+                print ('Error in generating svi_params_df,volcube_implied_strikes: ', e)
+                svi_params_df,volcube_implied_strikes =  None, None
+
 
             currpair_mktdata_dict[eval_date]['volcube'] = volcube
             currpair_mktdata_dict[eval_date]['volcube_interp_object_dict'] = volcube_interp_object_dict
-
+            currpair_mktdata_dict[eval_date]['svi_params_df'] = svi_params_df
+            currpair_mktdata_dict[eval_date]['volcube_implied_strikes'] = volcube_implied_strikes
+            
             yield_curr1_prev = yield_curr1
             yield_curr2_prev = yield_curr2
             spot_rate_prev = spot_rate
 
-            #print(f"Processed {currpair} on {eval_date}")
+            print(f"Processed {currpair} on {eval_date}")
         except Exception as e:
             print(f"Error processing {currpair} on {eval_date}: {e}")
             continue

@@ -1,0 +1,7 @@
+1. To get the correct expiry dates and value dates from Bloomberg
+2. Use the rate conventions and currpair conventions properly
+3. Use the calendar properly
+4. Check the SVI vol calculation....seems off
+5. Check local vol calculation....MC pricing of european option not matching
+6. Calculate Adapted Greeks
+
