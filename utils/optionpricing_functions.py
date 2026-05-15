@@ -22,13 +22,19 @@
 
 import pandas as pd
 import numpy as np
+from numba import njit, prange
 import datetime
+import os, sys
+base_dir = os.environ.get('PROJECTS_NEW_HOME')
+sys.path.append(base_dir + '\\utils\\')
+sys.path.append(base_dir + '\\configs\\')
 from dates_functions import *
 import scipy.stats as ss
 from scipy.interpolate import CubicSpline
 from scipy.interpolate import interp1d
 from scipy.interpolate import RectBivariateSpline # Smooth interpolation of C(T,K) and derivatives
 from scipy.interpolate import RegularGridInterpolator # Monte Carlo
+from scipy.interpolate import griddata
 from scipy.optimize import brentq
 from scipy.optimize import least_squares
 import math
@@ -276,12 +282,36 @@ def svi_calibration_func(volcube):
 ############################################################################################################################################################################
 
 #### Building the grid of maturities and surface over which the call prices and local vol will be calculated
-def build_maturities_strikes(eval_date, volcube_implied_strikes, linearmktdata_df,linearmktdata_interp_object_dict,linearmktdata_time_axis_interp_method='linear'):
-    nb_steps = 20
+def build_maturities_strikes(eval_date, volcube_implied_strikes, linearmktdata_df,linearmktdata_interp_object_dict,linearmktdata_time_axis_interp_method='linear', all_strikes_boolean=True):
+    nb_steps = 50
+    bin_must = 20
+    bin_others = 8
 
-    strikes = sorted((volcube_implied_strikes[['10P','25P','ATM','25C','10C']]).values.flatten())
+    delta_cols = ['10P','25P','ATM','25C','10C']
+    delta_cols_atm_25 = ['25P','ATM','25C']
+    strikes = sorted((volcube_implied_strikes[delta_cols]).values.flatten())
     strikes = [float(round(x,4)) for x in strikes]
+    if not (all_strikes_boolean):
+        
+        # optimize otherwise too many strikes
+        strikes_must = sorted((volcube_implied_strikes[delta_cols_atm_25]).values.flatten())
+        strikes_must = [float(round(x,4)) for x in strikes_must]
 
+        strikes_others = list(set(strikes) - set(strikes_must))
+
+        df_must = pd.DataFrame({"numbers": strikes_must})
+        df_must["bin"] = pd.cut(df_must["numbers"], bins=bin_must)
+        sparse_avg_must = df_must.groupby("bin", observed=True)["numbers"].mean().tolist()
+
+        df_others = pd.DataFrame({"numbers": strikes_others})
+        df_others["bin"] = pd.cut(df_others["numbers"], bins=bin_others)
+        sparse_avg_others = df_others.groupby("bin", observed=True)["numbers"].mean().tolist()
+
+        strikes = sparse_avg_must + sparse_avg_others
+        strikes = [float(round(x,4)) for x in strikes]
+        strikes = list(set(strikes))
+        strikes.sort()
+        
     std_expiry_dates = list(volcube_implied_strikes['Expiry_Date'])
     expiry_date1, expiry_date2 = std_expiry_dates[0], std_expiry_dates[-1]
 
@@ -304,11 +334,12 @@ def build_call_surface(interp_data_df, strikes, option_details_dict, currpair_mk
     vol_surface shape: len(expiry_dates) x len(strikes)
     """
     option_details_dict['CallPut'] = 'Call' # should always be Call
-    expiry_dates = interp_data_df['De']
+    expiry_dates = list(interp_data_df['De'])
     call_prices_surface = np.zeros((len(expiry_dates),len(strikes)))
     count = 0
     for i, expiry_date in enumerate(expiry_dates):
         for j, Strike in enumerate(strikes):
+            #print (count, i,j,Strike, expiry_date)
             option_details_dict['Strike'] = Strike
             option_details_dict['Expiry'] = expiry_date
 
@@ -316,7 +347,7 @@ def build_call_surface(interp_data_df, strikes, option_details_dict, currpair_mk
 
             mktdata_details_dict = {'Spot':Spot, 'Ft':Ft, 'rf':rf, 'rd':rd, 'Te':Te, 'Td':Td, 'De':De, 'Dd':Dd, 'Ds':Ds,'sigma': None, 'sigma_ATM': None}
             sigma, sigma_ATM = smile_vol_func(option_details_dict, mktdata_details_dict, currpair_mktdata_dict_pricing_date,smile_vol_model,volmktdata_time_axis_interp_method)
-
+            print (sigma)
             mktdata_details_dict['sigma'] = sigma
             mktdata_details_dict['sigma_ATM'] = sigma_ATM
 
@@ -324,12 +355,16 @@ def build_call_surface(interp_data_df, strikes, option_details_dict, currpair_mk
             
             call_prices_surface[i, j] = output.loc['Premium_2ndCcy_pips','Value'] # will be used in dC/dK, need to be same units
             count = count + 1
-            print (count)
+            #print (count, i,j,Strike, expiry_date)
+
     return call_prices_surface
 
 
-##### Building the 2 dimensional local vol surface #####
-def dupire_local_vol_func(interp_data_df, strikes, option_details_dict, currpair_mktdata_dict_pricing_date, smile_vol_model ='std_cubic_interp_vol_model', 
+
+
+##### Building the 2 dimensional local vol surface (using RectBivariateSpline #####
+##############################################################################################
+def dupire_local_vol_bivariate_spline_func(interp_data_df, strikes, option_details_dict, currpair_mktdata_dict_pricing_date, smile_vol_model ='std_cubic_interp_vol_model', 
                        volmktdata_time_axis_interp_method = 'linear', price_greeks_concise_boolean = True):
     """
     Computes Dupire local volatility surface.
@@ -347,30 +382,35 @@ def dupire_local_vol_func(interp_data_df, strikes, option_details_dict, currpair
     strikes_array = np.asarray(strikes)
     expiry_dates = list(interp_data_df['De'])
 
-    call_surface = build_call_surface(interp_data_df, strikes, option_details_dict, currpair_mktdata_dict_pricing_date, smile_vol_model =smile_vol_model, 
+    call_prices_surface = build_call_surface(interp_data_df, strikes, option_details_dict, currpair_mktdata_dict_pricing_date, smile_vol_model =smile_vol_model, 
                                       volmktdata_time_axis_interp_method = volmktdata_time_axis_interp_method, price_greeks_concise_boolean = price_greeks_concise_boolean)
 
     # Smooth interpolation of C(T,K)
     spline = RectBivariateSpline(
         expiry_years_array,
         strikes_array,
-        call_surface,
+        call_prices_surface,
         kx=3,
         ky=3
     )
 
-    local_vol_surface = np.zeros_like(call_surface)
+    local_vol_surface = np.zeros_like(call_prices_surface)
 
     for i, (Te_years, expiry_date) in enumerate(zip(expiry_years_array, expiry_dates)):
         for j, K in enumerate(strikes_array):
-            print (i,j,Te_years, expiry_date,K)
+            # print (i,j,Te_years, expiry_date,K)
 
             Spot, Ft, rf, rd, Te, Td, De, Dd, Ds = interp_data_df.loc[expiry_date,:]
 
-            C = spline(Te_years, K, dx=0, dy=0)[0, 0]
-            dC_dT = spline(Te_years, K, dx=1, dy=0)[0, 0]
-            dC_dK = spline(Te_years, K, dx=0, dy=1)[0, 0]
-            d2C_dK2 = spline(Te_years, K, dx=0, dy=2)[0, 0]
+            C = float(spline(Te_years, K, dx=0, dy=0))
+            dC_dT = float(spline(Te_years, K, dx=1, dy=0))
+            dC_dK = float(spline(Te_years, K, dx=0, dy=1))
+            d2C_dK2 = float(spline(Te_years, K, dx=0, dy=2))
+
+            # C = spline(Te_years, K, dx=0, dy=0)[0, 0]
+            # dC_dT = spline(Te_years, K, dx=1, dy=0)[0, 0]
+            # dC_dK = spline(Te_years, K, dx=0, dy=1)[0, 0]
+            # d2C_dK2 = spline(Te_years, K, dx=0, dy=2)[0, 0]
 
             numerator = dC_dT + (rd - rf) * K * dC_dK + rf * C
             denominator = 0.5 * K**2 * d2C_dK2
@@ -385,6 +425,86 @@ def dupire_local_vol_func(interp_data_df, strikes, option_details_dict, currpair
     return local_vol_surface, expiry_years_array,strikes_array
 
 
+
+##### Building the 2 dimensional local vol surface (using BS Greeks #####
+##############################################################################################
+
+def analytical_gk_derivatives(S, K, T, rd, rf, sigma):
+    """Calculates exact analytical derivatives for Garman-Kohlhagen option surfaces."""
+    if T <= 0:
+        return 0.0, 0.0, 0.0, 0.0
+        
+    d1 = (np.log(S / K) + (rd - rf + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T))
+    d2 = d1 - sigma * np.sqrt(T)
+    
+    # 1. Exact Call Price (C)
+    C = S * np.exp(-rf * T) * ss.norm.cdf(d1) - K * np.exp(-rd * T) * ss.norm.cdf(d2)
+    
+    # 2. Exact Dual Delta (dC_dK)
+    dC_dK = -np.exp(-rd * T) * ss.norm.cdf(d2)
+    
+    # 3. Exact Dual Gamma (d2C_dK2)
+    d2C_dK2 = (np.exp(-rd * T) * ss.norm.pdf(d2)) / (K * sigma * np.sqrt(T))
+    
+    # 4. Exact Dual Theta / Price derivative w.r.t Maturity (dC_dT)
+    term1 = (S * np.exp(-rf * T) * ss.norm.pdf(d1) * sigma) / (2 * np.sqrt(T))
+    term2 = rf * S * np.exp(-rf * T) * ss.norm.cdf(d1)
+    term3 = rd * K * np.exp(-rd * T) * ss.norm.cdf(d2)
+    dC_dT = term1 - term2 + term3
+    
+    return C, dC_dT, dC_dK, d2C_dK2
+
+
+
+def dupire_local_vol_bs_greeks_func(interp_data_df, strikes, option_details_dict, currpair_mktdata_dict_pricing_date, smile_vol_model ='std_cubic_interp_vol_model', 
+                       volmktdata_time_axis_interp_method = 'linear'):
+    """
+    Computes Dupire local volatility surface.
+
+    Dupire FX formula:
+
+    sigma_loc^2(K,T) =
+        [dC/dT + (rd-rf) K dC/dK + rf C]
+        /
+        [0.5 K^2 d2C/dK2]
+    """
+    expiry_days = list(interp_data_df['Te'])
+ 
+    expiry_years_array = np.asarray(expiry_days)/365
+    strikes_array = np.asarray(strikes)
+    expiry_dates = list(interp_data_df['De'])
+    smile_vol_model ='std_cubic_interp_vol_model'
+    volmktdata_time_axis_interp_method = 'linear'
+
+    local_vol_surface = np.zeros((len(expiry_years_array),len(strikes_array)))
+    # FLAT_VOL = 0.05
+
+    for i, (Te_years, expiry_date) in enumerate(zip(expiry_years_array, expiry_dates)):
+        for j, K in enumerate(strikes_array):
+            # print (i,j,Te_years, expiry_date,K)
+            
+            option_details_dict['Expiry'] = expiry_date
+            option_details_dict['Strike'] = K
+
+            Spot, Ft, rf, rd, Te, Td, De, Dd, Ds = interp_data_df.loc[expiry_date,:]
+            mktdata_details_dict = {'Spot':float(Spot), 'Ft':Ft, 'rf':rf, 'rd':rd, 'Te':Te, 'Td':Td, 'De':De, 'Dd':Dd, 'Ds':Ds,'sigma': None, 'sigma_ATM': None}
+
+            sigma, sigma_ATM = smile_vol_func(option_details_dict, mktdata_details_dict, currpair_mktdata_dict_pricing_date,smile_vol_model,volmktdata_time_axis_interp_method)
+
+            C, dC_dT, dC_dK, d2C_dK2 = analytical_gk_derivatives(Spot, K, Te_years, rd, rf, sigma)
+
+           
+            numerator = dC_dT + (rd - rf) * K * dC_dK + rf * C
+            denominator = 0.5 * K**2 * d2C_dK2
+
+            local_var = numerator / denominator
+
+            if local_var > 1e-12 and np.isfinite(local_var):
+                local_vol_surface[i, j] = np.sqrt(local_var)
+            else:
+                local_vol_surface[i, j] = np.nan
+
+    return local_vol_surface, expiry_years_array,strikes_array
 
 
 
@@ -664,24 +784,136 @@ def std_cubic_interp_vol_model_func(Ft, Strike, Te, Td, rf, volcube_interp_objec
     sigma = smilecurve[2] # sigma to start the iteration is the ATM vol
     sigma_ATM = smilecurve[2]
 
-    cubic_spline_surface = CubicSpline(putdeltas, smilecurve)
+    Te = Te / 365
+    Td = Td / 365
 
-    delta_vol = 1.00
+    #smile_interp_method = 'newton_raphson'
+    smile_interp_method = 'brentq_optimize'
+    
 
-    while (delta_vol > 0.001):
-        
-        analytical_delta = analytical_put_delta(Ft, Strike, Te, Td, rf, sigma)
-        delta = abs(analytical_delta) # To make the put delta scale always +ve to match with the put delta list
+    ##########################################################################
+    # Newton Raphson Method ( with extrapolation True and delta bounds 0 & 1)
+    ###########################################################################
 
-        derivative = cubic_spline_surface(delta + 0.01) - cubic_spline_surface(delta)/(0.01)
-        new_delta = float(delta + (1/derivative) * (0 - cubic_spline_surface(delta))) 
+    if smile_interp_method == 'newton_raphson':
+            
+        #cubic_spline_surface = CubicSpline(putdeltas, smilecurve)
+        cubic_spline_surface = CubicSpline(putdeltas, smilecurve, extrapolate=True)
         
-        new_vol = float(cubic_spline_surface(new_delta))
-        delta_vol = abs(new_vol - sigma)
+        delta_vol = 1.00
+        count = 0
+        h = 0.0001
         
-        sigma = new_vol
+
+        delta_lb = 1e-4
+        delta_ub = 1-1e-4
+        while (delta_vol > 0.001):
+            
+            analytical_delta = analytical_put_delta(Ft, Strike, Te, Td, rf, sigma)
+            
+            # delta calculation from analytical function
+            delta_calculated = abs(analytical_delta) # To make the put delta scale always +ve to match with the put delta list
+            delta = np.clip(delta_calculated, delta_lb, delta_ub)
+
+            #delta_plus_h = np.clip(delta + h, 0.10, 0.90)
+            delta_plus_h = np.clip(delta + h, delta_lb, delta_ub)
+
+            # derivative calculation
+            derivative_calculated = (cubic_spline_surface(delta_plus_h) - cubic_spline_surface(delta)) / h 
+            if derivative_calculated == 0:
+                derivative = 1e-6
+            else:
+                derivative = copy.deepcopy(derivative_calculated)
+
+            # new delta calculation from delta and derivative
+            new_delta_calculated = float(delta - (cubic_spline_surface(delta) / derivative))
+            #new_delta = np.clip(new_delta_calculated, 0.10, 0.90)
+            new_delta = np.clip(new_delta_calculated, delta_lb, delta_ub)
+            
+
+            # new vol calculation and delta_vol calculation to check convergence later 
+            new_vol = float(cubic_spline_surface(new_delta))
+            delta_vol = abs(new_vol - sigma)
+            sigma_earlier = copy.deepcopy(sigma)
+
+            sigma = new_vol
+            count += 1
+
+            output_dict = {'count': count,
+                        'Ft': float(round(Ft,6)),
+                        'Strike': Strike,
+                        'Td': Td,
+                        'Te': Te,
+                        'rf': rf,
+                        'analytical_delta': float(round(analytical_delta,6)),
+                        'delta_calculated': float(round(delta_calculated,6)),
+                        'delta': float(round(delta,6)),
+                        'derivative_calculated': float(round(derivative_calculated,6)),
+                        'derivative': float(round(derivative,6)),
+                        'new_delta_calculated': float(round(new_delta_calculated,6)),
+                        'new_delta': float(round(new_delta,6)),
+                        'new_vol': float(round(new_vol,6)),
+                        'sigma_earlier': float(round(sigma_earlier,6)),
+                        'delta_vol': float(round(delta_vol,6)),
+                        'sigma': float(round(sigma,6))
+                        }
+            if count == 50000:
+                print("Warning: smile vol iteration did not converge.")
+                print (output_dict)
+                break
+    
+    
+    ##########################################################################
+    # Optimized Implementation using brentq
+            # Using a robust root-finding algorithm from scipy.optimize completely eliminates the need for manual derivative approximations, prevents out-of-bounds 
+                # extrapolation, and guarantees convergence if a root exists.
+            # In implied volatility mapping, you want to find a volatility (\(\sigma \)) such that the absolute delta generated by your pricing model matches the 
+                # delta derived from your volatility smile curve spline.
+            # Guaranteed Convergence: As long as one boundary results in a negative value and the other results in a positive value (a sign change), 
+                # brentq will always locate the root.
+            # Strict Boundary Control: The parameters a=0.01 and b=1.00 explicitly prevent the solver from testing negative volatilities or infinite values that crash your pricing model.
+    # Flat Extrapolation ( if your pricing model becomes unstable or erratic when evaluating extreme deep-tail risks.)
+            # delta_lb = 0.10 & delta_ub = 0.90 for Flat exterpolation beyond 0.10 & 0.90 delta points
+            # cubic_spline_surface = CubicSpline(putdeltas, smilecurve)
+            # This approach clamps the volatility flat at the edge values if the option becomes deeply in-the-money or out-of-the-money. A delta of 0.05 will 
+            # safely inherit the 0.10 delta volatility.
+
+    # Linear Extrapolation to 0 and 1 Boundaries ( if you are pricing wing options (deep OTM/ITM) and need a continuous skew slope.)
+            # delta_lb = 1e-4 & delta_ub = 1-1e-4 for Linear extrapolation beyond 0.10 & 0.90 delta points
+            # cubic_spline_surface = CubicSpline(putdeltas, smilecurve, extrapolation = True)
+            # If you want the volatility smile to naturally slope upward or downward all the way out to the boundaries, configure CubicSpline to allow boundary extrapolation,
+            # but strictly clamp the input variable to the theoretical bounds of [0.0, 1.0].
+    ###########################################################################
+
+    if smile_interp_method == 'brentq_optimize':
+            
+        cubic_spline_surface = CubicSpline(putdeltas, smilecurve, extrapolate = True)
+        #cubic_spline_surface = CubicSpline(putdeltas, smilecurve, extrapolate=True)
+        
+        delta_lb = 1e-4
+        delta_ub = 1-1e-4
+
+        def vol_solv_objective(sigma_guess):
+
+            # delta calculation from analytical function
+            analytical_delta = analytical_put_delta(Ft, Strike, Te, Td, rf, sigma_guess)
+            delta_calculated = abs(analytical_delta) 
+            delta = np.clip(delta_calculated, delta_lb, delta_ub) 
+
+            new_vol = float(cubic_spline_surface(delta))
+            new_vol = max(new_vol, 0.005) 
+
+            return new_vol - sigma_guess
+        
+        try:
+            sigma = brentq(vol_solv_objective, a=0.01, b=1.00, xtol=1e-5) # between 1% and 100%
+        except ValueError as e:
+            print(f"Optimization failed: {e}")
+        
     
     return sigma, sigma_ATM
+
+
 
 
 ############################################################################################################################################################################
@@ -739,30 +971,7 @@ def smile_vol_func(option_details_dict, mktdata_details_dict, currpair_mktdata_d
     
     return sigma, sigma_ATM
 
-# def mktdata_details_func(currpair_mktdata_dict_pricing_date):
 
-#     linearmktdata_df = currpair_mktdata_dict_pricing_date['linearmktdata_df']
-#     linearmktdata_interp_object_dict = currpair_mktdata_dict_pricing_date['linearmktdata_interp_object_dict']
-#     volcube_interp_object_dict = currpair_mktdata_dict_pricing_date['volcube_interp_object_dict']
-#     volcube = currpair_mktdata_dict_pricing_date['volcube']
-#     svi_params_df = currpair_mktdata_dict_pricing_date['svi_params_df']
-
-#     linearmktdata_time_axis_interp_method = 'linear'
-    
-
-#     volmktdata_time_axis_interp_method = 'linear'
-#     smile_vol_model = 'svi_vol_model' # 'svi_vol_model, 'std_cubic_interp_vol_model'
-#     #smile_vol_model = 'std_cubic_interp_vol_model'
-
-#     vol_details_dict = {}
-#     if smile_vol_model == 'std_cubic_interp_vol_model':
-#         vol_details_dict['volcube_interp_object_dict'] = volcube_interp_object_dict
-#         vol_details_dict['volmktdata_time_axis_interp_method'] = volmktdata_time_axis_interp_method
-#     elif smile_vol_model == 'svi_vol_model':
-#         vol_details_dict['volcube'] = volcube
-#         vol_details_dict['svi_params_df'] = svi_params_df
-
-#     return mktdata_details_dict
 
 ############################################################################################################################################################################    
 ## Calculation of Price & Greeks for Vanilla Options ( Closed form Black Scholes)
@@ -957,8 +1166,179 @@ def VanillaPriceGreeks_BS(option_details_dict, mktdata_details_dict,price_greeks
 ## Calculation of Price & Greeks for Vanilla Options (Monte Carlo ) using local volatility model
 ############################################################################################################################################################################
 
-# Prices still not matching  #########
-def VanillaPriceGreeks_MC_Local_Vol(option_details_dict, mktdata_details_dict, local_vol_surface,expiry_years_array, strikes_array,n_paths=100_000,n_steps=252,seed=42):
+##### repairing the local vol surface : filling the NaN values with good predicted data ######################
+def local_vol_surface_repair_func(local_vol_surface,expiry_years_array,strikes_array):
+        
+    # Your starting data shapes
+    # x: 1D array of shape (M,)
+    # y: 1D array of shape (N,)
+    # z: 2D array of shape (M, N) containing scattered NaNs
+
+    # 1. Expand the 1D axes into 2D coordinate grids matching your Z matrix shape
+    X, Y = np.meshgrid(expiry_years_array, strikes_array, indexing='ij')
+
+    # 2. Extract ONLY the valid coordinates where Z is not a NaN
+    valid_mask = ~np.isnan(local_vol_surface)
+
+    # 3. Flatten coordinates and values to create structural pairs for griddata
+    known_points = np.column_stack((X[valid_mask], Y[valid_mask]))
+    known_values = local_vol_surface[valid_mask]
+
+    # 4. Use the complete unflattened grid coordinate maps as target query points
+    # griddata handles the 2D matrix shape requirements natively for target outputs
+    repaired_z = griddata(
+        points=known_points, 
+        values=known_values, 
+        xi=(X, Y), 
+        method='linear' # Options: 'linear', 'nearest', 'cubic'
+    )
+
+    # 5. Fix edge-cases: any boundary NaN missed by 'linear' can be swept with 'nearest'
+    if np.isnan(repaired_z).any():
+        edge_fill = griddata(known_points, known_values, (X, Y), method='nearest')
+        repaired_z[np.isnan(repaired_z)] = edge_fill[np.isnan(repaired_z)]
+
+    local_vol_surface_repaired = copy.deepcopy(repaired_z)
+
+    return local_vol_surface_repaired
+
+
+##### Method 1 : Using RegularGridInterpolator : Slower method ######################
+#################################################################################################
+
+def generating_final_S_using_RegularGridInterpolator(Spot,Te,rd,rf,local_vol_surface_repaired,expiry_years_array,strikes_array,n_paths,n_steps,seed):
+
+    # Interpolator expects points as (time, spot)
+    lv_interp = RegularGridInterpolator(
+        points=(expiry_years_array, strikes_array),
+        values=local_vol_surface_repaired,
+        bounds_error=False,
+        fill_value=None,
+        method = 'linear'
+    )
+
+    dt = Te / n_steps
+    sqrt_dt = np.sqrt(dt)
+
+    # running the Monte Carlo 
+    rng = np.random.default_rng(seed)
+
+    min_strike = strikes_array[0]
+    max_strike = strikes_array[-1]
+
+    # Antithetic Variates Implementation to crush random noise
+    half_paths = n_paths // 2
+
+    S = np.full(n_paths, Spot, dtype=float)
+
+    for step in range(n_steps):
+        #t = min((step + 1) * dt, expiry_years_array[-1])
+        t = min(step * dt, expiry_years_array[-1])
+
+        clipped_S = np.clip(S, min_strike, max_strike)
+
+        query_points = np.column_stack([np.full(n_paths, t), clipped_S])
+        sigma = lv_interp(query_points)
+        #print('sigma',sigma)
+        # Basic safety cleaning
+        sigma = np.where(np.isfinite(sigma), sigma, 0.0)
+        sigma = np.maximum(sigma, 1e-6)
+
+        #Z = rng.standard_normal(n_paths)
+        # Symmetric Antithetic Gaussian Shocks
+        epsilon = rng.standard_normal(half_paths)
+        Z = np.concatenate([epsilon, -epsilon])
+
+        # Log-Euler scheme
+        S *= np.exp((rd - rf - 0.5 * sigma**2) * dt + sigma * sqrt_dt * Z)
+        
+    print('Completed Step: ', step)
+    return S
+
+
+##### Method 2 : Using numba library : Faster method ######################
+#################################################################################################
+
+@njit(fastmath=True)
+def bilinear_interp_2d(x_grid, y_grid, values, x, y):
+    """Blazing fast 2D linear interpolation compiled directly to machine code."""
+    # Find binary search slots on the grid (like np.searchsorted)
+    i = np.searchsorted(x_grid, x) - 1
+    i = max(0, min(i, len(x_grid) - 2))
+    
+    j = np.searchsorted(y_grid, y) - 1
+    j = max(0, min(j, len(y_grid) - 2))
+    
+    x0, x1 = x_grid[i], x_grid[i+1]
+    y0, y1 = y_grid[j], y_grid[j+1]
+    
+    # Weight factors
+    fx = (x - x0) / (x1 - x0)
+    fy = (y - y0) / (y1 - y0)
+    
+    # 4 corners
+    v00 = values[i, j]
+    v10 = values[i+1, j]
+    v01 = values[i, j+1]
+    v11 = values[i+1, j+1]
+    
+    # Interpolate
+    return (1 - fx) * (1 - fy) * v00 + fx * (1 - fy) * v10 + (1 - fx) * fy * v01 + fx * fy * v11
+
+@njit(parallel=True, fastmath=True)
+def generating_final_S_using_NumbaLoopBiLinearInterpolator(Spot, Te, rd, rf, local_vol_surface_repaired, expiry_years_array, strikes_array, n_paths, n_steps, seed):
+    """
+    The entire Monte Carlo time-stepping engine.
+    Generates random shocks internally using parallel threading.
+    """
+    # 1. Initialize random seed inside Numba (thread-safe setup)
+    np.random.seed(seed)
+    
+    dt = Te / n_steps
+    sqrt_dt = np.sqrt(dt)
+    
+    min_strike = strikes_array[0]
+    max_strike = strikes_array[-1]
+    
+    # Initialize asset trajectories
+    S = np.full(n_paths, Spot, dtype=np.float64)
+    half_paths = n_paths // 2
+
+    for step in range(n_steps):
+        t = min(step * dt, expiry_years_array[-1])
+        
+        # 2. Generate Antithetic Shocks on-the-fly inside Numba
+        # Allocate half the array size for random generation
+        epsilon = np.random.standard_normal(half_paths)
+        
+        # Manually create the mirrored antithetic array to avoid Python overhead
+        Z = np.empty(n_paths, dtype=np.float64)
+        for p in prange(half_paths):
+            Z[p] = epsilon[p]
+            Z[p + half_paths] = -epsilon[p]
+            
+        # 3. Propagate all paths in parallel across CPU cores
+        for p in prange(n_paths):
+            current_S = S[p]
+            clipped_S = max(min_strike, min(current_S, max_strike))
+            
+            # Fetch volatility from local vol surface
+            sigma = bilinear_interp_2d(expiry_years_array, strikes_array, local_vol_surface_repaired, t, clipped_S)
+            if sigma < 1e-5:
+                sigma = 1e-5
+                
+            # Log-Euler update step
+            S[p] = current_S * np.exp((rd - rf - 0.5 * sigma**2) * dt + sigma * sqrt_dt * Z[p])
+            
+    return S
+
+
+
+#### pricing the Vanilla using different methods #######################
+    # loop_interp_method :: "NumbaLoopBiLinearInterpolator", "RegularGridInterpolator"
+
+#######################################################################################################################
+def VanillaPriceGreeks_MC_Local_Vol(option_details_dict, mktdata_details_dict, local_vol_surface,expiry_years_array, strikes_array,loop_interp_method,n_paths=100_000,n_steps=252,seed=42):
 
     """
     European option pricing using Monte Carlo under local volatility.
@@ -993,44 +1373,23 @@ def VanillaPriceGreeks_MC_Local_Vol(option_details_dict, mktdata_details_dict, l
     
     Spot, Ft, Te, Td,rf, rd = mktdata_details_dict['Spot'], mktdata_details_dict['Ft'], mktdata_details_dict['Te'], mktdata_details_dict['Td'], mktdata_details_dict['rf'],mktdata_details_dict['rd']
     Ds, De, Dd, sigma_bs_implied, sigma_ATM = mktdata_details_dict['Ds'], mktdata_details_dict['De'], mktdata_details_dict['Dd'], mktdata_details_dict['sigma'], mktdata_details_dict['sigma_ATM']
-    
+    Spot = float(Spot)
+
     Te = Te / currpair_convention_days
     Td = Td / currpair_convention_days
- 
-    rng = np.random.default_rng(seed)
+    
 
-    # maturities = np.asarray(maturities)
-    # strikes = np.asarray(strikes)
-    # local_vol_surface = np.asarray(local_vol_surface)
+    # filling the NaN values with good predicted data
+    local_vol_surface_repaired = local_vol_surface_repair_func(local_vol_surface,expiry_years_array,strikes_array)
 
-    # Interpolator expects points as (time, spot)
-    lv_interp = RegularGridInterpolator(
-        points=(expiry_years_array, strikes_array),
-        values=local_vol_surface,
-        bounds_error=False,
-        fill_value=None
-    )
+    # generating final S vector 
+    if loop_interp_method == 'RegularGridInterpolator': # running this second time or more takes the same time
 
-    dt = Te / n_steps
-    sqrt_dt = np.sqrt(dt)
+        S = generating_final_S_using_RegularGridInterpolator(Spot, Te, rd, rf, local_vol_surface_repaired,expiry_years_array,strikes_array,n_paths,n_steps,seed)
 
-    S = np.full(n_paths, Spot, dtype=float)
+    elif loop_interp_method == 'NumbaLoopBiLinearInterpolator': # running this second time or more is much faster
 
-    for step in range(n_steps):
-        t = min((step + 1) * dt, expiry_years_array[-1])
-
-        query_points = np.column_stack([np.full(n_paths, t), S])
-        sigma = lv_interp(query_points)
-
-        # Basic safety cleaning
-        sigma = np.where(np.isfinite(sigma), sigma, 0.0)
-        sigma = np.maximum(sigma, 1e-6)
-
-        Z = rng.standard_normal(n_paths)
-
-        # Log-Euler scheme
-        S *= np.exp((rd - rf - 0.5 * sigma**2) * dt + sigma * sqrt_dt * Z)
-    print('Completed Step: ', step)
+        S = generating_final_S_using_NumbaLoopBiLinearInterpolator(Spot, Te, rd, rf, local_vol_surface_repaired, expiry_years_array, strikes_array, n_paths, n_steps, seed)
 
     if CallPut == "Call":
         payoff = np.maximum(S - Strike, 0.0)
@@ -1041,10 +1400,8 @@ def VanillaPriceGreeks_MC_Local_Vol(option_details_dict, mktdata_details_dict, l
 
     price = np.exp(-rd * Td) * np.mean(payoff)
     #stderr = np.exp(-rd * Td) * np.std(payoff) / np.sqrt(n_paths)
-
-    return price, stderr
-
-
+    print (price)
+    return price
 
 
 
@@ -1052,8 +1409,14 @@ def VanillaPriceGreeks_MC_Local_Vol(option_details_dict, mktdata_details_dict, l
 
 
 
+
+
+
+######################################################################################################################################################################
 
 # Price derived from spot move, delta, and vega, without re-interpolating the vol cube for each spot move iteration. This is a faster method to get an approximate price and delta for
 #  small spot moves, but it may be less accurate for larger spot moves or when the vol surface is highly non-linear.
 def VanillaPriceSimulated (option_details, linearmktdata_df, interp_obj_linearmktdata, volcube_interp_object_dict, interp_method = 'cubic', greeks = 'OnlyDelta'):
     pass
+
+#########################################################################################################################################################################

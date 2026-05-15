@@ -88,21 +88,30 @@ for currpair in currpairs:
 
     interp_method = 'both'
     interp_obj_boolean = True
-
+    #eval_date = eval_dates[0]
+    # eval_dates = eval_dates[:5]
+    # eval_dates = ['2026-01-06']
     for eval_date in eval_dates:
         try:
             currpair_mktdata_dict[eval_date] = {}
 
+            ################################################################
             # spot rate
+            ################################################################
+
             try:
                 spot_rate = spot_df.loc[eval_date, 'Spot']
             except Exception as e:
                 spot_rate = spot_rate_prev
                 print(f"Spot rate missing for {currpair} on {eval_date}, using previous value: {spot_rate_prev}")
             
+            spot_rate_prev = spot_rate
             currpair_mktdata_dict[eval_date]['spot'] = spot_rate
 
-            #### linearmktdata & linearmktdata_interp_object
+            ################################################################
+            #### Yield curves
+            ################################################################
+            
             try:
                 yield_curr1 = curr1_yield_df.loc[eval_date]
             except Exception as e:
@@ -127,6 +136,13 @@ for currpair in currpairs:
                     yield_curr2_diff = yield_curr2.diff().fillna(yield_curr2_diff_mean)
                     yield_curr2 = yield_curr2_prev + yield_curr2_diff
             
+            yield_curr1_prev = yield_curr1
+            yield_curr2_prev = yield_curr2
+
+            ################################################################
+            #### linearmktdata and linearmktdata_interp_object #######
+            ################################################################
+            
             try:
                 linearmktdata_df, linearmktdata_interp_object_dict = linearmktdata_func(eval_date, spot_rate, yield_curr1, yield_curr2,currpair_static_info_dict,interp_obj_boolean = True, 
                                                                             time_axis_interp_method = 'both')
@@ -137,9 +153,10 @@ for currpair in currpairs:
             currpair_mktdata_dict[eval_date]['linearmktdata_df'] = linearmktdata_df
             currpair_mktdata_dict[eval_date]['linearmktdata_interp_object_dict'] = linearmktdata_interp_object_dict
  
-
+            ################################################################
             #### volcube & volcube_interp_object ######################
-
+            ################################################################
+            
             volcube_t = (pd.concat([vol_10p_df.loc[eval_date], vol_25p_df.loc[eval_date], vol_atm_df.loc[eval_date], vol_25c_df.loc[eval_date], vol_10c_df.loc[eval_date]], axis=1))
             volcube_t.columns = ['10P', '25P', 'ATM', '25C', '10C']
             
@@ -154,23 +171,52 @@ for currpair in currpairs:
                 print ('Error in generating volcube_interp_object_dict: ', e)
                 volcube_interp_object_dict = None
             
+            currpair_mktdata_dict[eval_date]['volcube'] = volcube
+            currpair_mktdata_dict[eval_date]['volcube_interp_object_dict'] = volcube_interp_object_dict
+
+            ################################################################
+            #### svi params and volcube implied strikes ####
+            ################################################################
+
             try:
                 svi_params_df,volcube_implied_strikes = svi_calibration_func(volcube)
             except Exception as e:
                 print ('Error in generating svi_params_df,volcube_implied_strikes: ', e)
                 svi_params_df,volcube_implied_strikes =  None, None
 
-
-            currpair_mktdata_dict[eval_date]['volcube'] = volcube
-            currpair_mktdata_dict[eval_date]['volcube_interp_object_dict'] = volcube_interp_object_dict
             currpair_mktdata_dict[eval_date]['svi_params_df'] = svi_params_df
             currpair_mktdata_dict[eval_date]['volcube_implied_strikes'] = volcube_implied_strikes
+
+            ################################################################
+            #### local vol surface ####
+            ################################################################
+            currpair_mktdata_dict_pricing_date = currpair_mktdata_dict[eval_date]
+            option_details_dict = option_details_dict = {'Eval_Date': eval_date, 'Currpair': currpair, 'Expiry': None, 'Strike': None, 'CallPut': 'Call', 
+                                                         'BuySell': 'Buy', 'Notional_For_Ccy': 1000000}
+            try:
+                interp_data_df, strikes = build_maturities_strikes(eval_date, volcube_implied_strikes, linearmktdata_df,linearmktdata_interp_object_dict,
+                                                               linearmktdata_time_axis_interp_method='linear',all_strikes_boolean=False)
+            except Exception as e:
+                print ('Error in generating interp_data_df,strikes: ', e)
+                interp_data_df, strikes =  None, None
             
-            yield_curr1_prev = yield_curr1
-            yield_curr2_prev = yield_curr2
-            spot_rate_prev = spot_rate
+            try:
+                # local_vol_surface,expiry_years_array,strikes_array = dupire_local_vol_bivariate_spline_func(interp_data_df, strikes, option_details_dict, currpair_mktdata_dict_pricing_date, 
+                #                                                                         smile_vol_model ='std_cubic_interp_vol_model', 
+                #                                                                         volmktdata_time_axis_interp_method = 'linear', 
+                #                                                                         price_greeks_concise_boolean = True)
+                
+                local_vol_surface,expiry_years_array,strikes_array = dupire_local_vol_bs_greeks_func(interp_data_df, strikes, option_details_dict, currpair_mktdata_dict_pricing_date, 
+                                                                                        smile_vol_model ='std_cubic_interp_vol_model', 
+                                                                                        volmktdata_time_axis_interp_method = 'linear')
+            except Exception as e:
+                print ('Error in generating interp_data_df,strikes: ', e)
+                local_vol_surface,expiry_years_array,strikes_array = None, None, None
+            
+            currpair_mktdata_dict[eval_date]['local_vol_surface_expiry_strikes_arrays'] = [local_vol_surface,expiry_years_array,strikes_array]
 
             print(f"Processed {currpair} on {eval_date}")
+            print('dimensions:', np.shape(local_vol_surface),len(expiry_years_array),len(strikes_array))
         except Exception as e:
             print(f"Error processing {currpair} on {eval_date}: {e}")
             continue

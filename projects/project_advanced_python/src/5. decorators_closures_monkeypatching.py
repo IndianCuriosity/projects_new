@@ -334,6 +334,12 @@ print(Person.total())
 # __eq__
 # others
 
+# Automatic Methods: It creates __init__ for setting attributes, __repr__ for a readable string output, and __eq__ for comparing objects by their data rather than memory address.
+# Immutability: Use @dataclass(frozen=True) to make instances read-only after they are created.
+# Easy Conversion: Quickly turn objects into other formats using asdict() or astuple().
+# Ordering: Use order=True to automatically add comparison methods like < and > based on the class fields.
+# Post-Init: Use the __post_init__ method if you need to perform extra validation or calculation after the automatic __init__ finishes
+    
 from dataclasses import dataclass
 @dataclass
 class Point:
